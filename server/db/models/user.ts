@@ -2,7 +2,9 @@ import { ObjectId } from "mongodb";
 
 export default class User {
     constructor(
-        public phone: string,
+        public state: 'unauthorized' | 'authorized',
+        public unauthorizedId?: ObjectId[],
+        public phone?: string,
         public _id?: ObjectId,
         public name?: string,
         public surname?: string,
@@ -13,7 +15,7 @@ export default class User {
         public flat?: string,
         public password?: string,
         public orders?: ObjectId[],
-        public favorites?: ObjectId[],
+        public favorites?: ObjectId,
         public cart?: ObjectId,
     ) { }
 }

@@ -39,6 +39,6 @@ export async function connectToDatabase() {
     collections.orders = orders;
 
     console.log(
-        `Successfully connected to database: ${db.databaseName} and collection: ${categories.collectionName}`,
+        `Successfully connected to database: ${db.databaseName} and collection: ${categories.collectionName}!`,
     );
 }

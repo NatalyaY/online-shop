@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "jsx": "react",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "target": "es6",
+        "outDir": "./../dist/backend",
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "baseUrl": ".",
+        "paths": {
+            "*": ["node_modules/*"]
+        }
+}
+}

@@ -124,7 +124,7 @@ const common = (options) => {
     const HtmlWebpackPlugins = pages.map((page) => new HtmlWebpackPlugin({
         inject: true,
         template: `src/assets/${page}.html`,
-        filename: `${options.htmlPath}/${page}.html`,
+        filename: options.isProduction ? `${options.htmlPath}/${page}.html` : `${options.htmlPath}/${page}-bundled.html`,
         chunks: [page],
     }));
 

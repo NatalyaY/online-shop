@@ -1,10 +1,10 @@
 {
     "compilerOptions": {
-        "jsx": "react-jsx",
+        "jsx": "react",
         "lib": [
             "dom",
             "dom.iterable",
-            "esnext"
+            "esnext",
         ],
         "module": "ESNext",
         "moduleResolution": "node",
