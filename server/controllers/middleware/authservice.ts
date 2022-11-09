@@ -22,28 +22,28 @@ function generateJWT(id: ObjectId) {
 
 const mergeCartAndFavorits = async (unauthorizedUser: User, autorizedUser: User) => {
     if (unauthorizedUser.favorites) {
-        const unauthorizedUserFavorits = await collections.favorites?.findOne({ _id: new ObjectId(unauthorizedUser.favorites) });
+        const unauthorizedUserFavorits = await collections.favorites.findOne({ _id: new ObjectId(unauthorizedUser.favorites) });
         if (unauthorizedUserFavorits?.items) {
-            const autorizedUserFavorits = await collections.favorites?.findOne({ _id: new ObjectId(autorizedUser.favorites) });
+            const autorizedUserFavorits = await collections.favorites.findOne({ _id: new ObjectId(autorizedUser.favorites) });
             const concatedFavorits = unauthorizedUserFavorits.items;
             if (autorizedUserFavorits?.items) {
                 concatedFavorits.push(...autorizedUserFavorits.items)
             };
-            await collections.favorites?.updateOne({ _id: new ObjectId(autorizedUser.favorites) }, { $set: { items: concatedFavorits }});
+            await collections.favorites.updateOne({ _id: new ObjectId(autorizedUser.favorites) }, { $set: { items: concatedFavorits }});
         };
-        await collections.favorites?.deleteOne({ _id: new ObjectId(unauthorizedUser.favorites) });
+        await collections.favorites.deleteOne({ _id: new ObjectId(unauthorizedUser.favorites) });
     };
     if (unauthorizedUser.cart) {
-        const unauthorizedUserCart = await collections.carts?.findOne({ _id: new ObjectId(unauthorizedUser.cart) });
+        const unauthorizedUserCart = await collections.carts.findOne({ _id: new ObjectId(unauthorizedUser.cart) });
         if (unauthorizedUserCart?.items) {
-            const autorizedUserCart = await collections.carts?.findOne({ _id: new ObjectId(autorizedUser.cart) });
+            const autorizedUserCart = await collections.carts.findOne({ _id: new ObjectId(autorizedUser.cart) });
             const concatedCart = unauthorizedUserCart.items;
             if (autorizedUserCart?.items) {
                 concatedCart.push(...autorizedUserCart.items)
             };
-            await collections.carts?.updateOne({ _id: new ObjectId(autorizedUser.cart) }, { $set: {items: concatedCart} });
+            await collections.carts.updateOne({ _id: new ObjectId(autorizedUser.cart) }, { $set: {items: concatedCart} });
         };
-        await collections.carts?.deleteOne({ _id: new ObjectId(unauthorizedUser.cart) });
+        await collections.carts.deleteOne({ _id: new ObjectId(unauthorizedUser.cart) });
     }
 };
 
@@ -51,7 +51,7 @@ const createUnauthorizedUser = async () => {
     const userDoc: User = {
         state: 'unauthorized'
     };
-    const userId = await collections.users?.insertOne(userDoc);
+    const userId = await collections.users.insertOne(userDoc);
     if (!userId) {
         throw createError(500, `Error while creating user in DB`);
     };
@@ -81,7 +81,7 @@ export const isAuth = async (req: express.Request, res: express.Response, next: 
 
 export const attachUser = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const decodedToken = (req as RequestCustom).token;
-    const currentUser = await collections.users?.findOne({ _id: new ObjectId(decodedToken.id) });
+    const currentUser = await collections.users.findOne({ _id: new ObjectId(decodedToken.id) });
     if (!currentUser) {
         return next(createError(401, 'No such user'));
     } else {
@@ -101,7 +101,7 @@ export const attachUser = async (req: express.Request, res: express.Response, ne
  * @returns { user: User | null, token: string }
  */
 export const login = async (unauthorizedUser: User, phone: NonNullable<User['phone']>, password: NonNullable<User['password']>) => {
-    const autorizedUser = await collections.users?.findOne({ phone });
+    const autorizedUser = await collections.users.findOne({ phone });
     if (!autorizedUser) {
         throw createError(400, `Пользователь '${phone}' не найден`);
     };
@@ -122,14 +122,13 @@ export const login = async (unauthorizedUser: User, phone: NonNullable<User['pho
         favorites: undefined,
         cart: undefined
     };
-    await collections.users?.updateOne({ _id: new ObjectId(unauthorizedUser._id) }, { $set: updateUnauthorizedDoc });
+    await collections.users.updateOne({ _id: new ObjectId(unauthorizedUser._id) }, { $set: updateUnauthorizedDoc });
     // fetch user again because cart and favorites could be merged with unauthorized and so changed since first fetch
-    return { user: await collections.users?.findOne({ _id: new ObjectId(autorizedUser._id) }), token: generateJWT(autorizedUser._id) };
+    return { user: await collections.users.findOne({ _id: new ObjectId(autorizedUser._id) }), token: generateJWT(autorizedUser._id) };
 };
 
 export const signUp = async (unauthorizedUser: User, phone: NonNullable<User['phone']>, password: NonNullable<User['password']>) => {
-    const existingUser = await collections.users?.findOne({ phone });
-    console.log(phone + ' pf');
+    const existingUser = await collections.users.findOne({ phone });
     if (existingUser) {
         throw createError(500, `Такой пользователь уже существует`);
     };
@@ -146,12 +145,12 @@ export const signUp = async (unauthorizedUser: User, phone: NonNullable<User['ph
         favorites: undefined,
         cart: undefined
     };
-    await collections.users?.updateOne({ _id: new ObjectId(unauthorizedUser._id) }, {$set: updateUnauthorizedDoc});
+    await collections.users.updateOne({ _id: new ObjectId(unauthorizedUser._id) }, {$set: updateUnauthorizedDoc});
     const autorizedUserId = await collections.users?.insertOne(autorizedUserDoc);
     if (!autorizedUserId) {
         throw createError(500, `Error while creating user in DB`);
     };
-    return { user: await collections.users?.findOne({ _id: new ObjectId(autorizedUserId.insertedId) }), token: generateJWT(autorizedUserId.insertedId) };
+    return { user: await collections.users.findOne({ _id: new ObjectId(autorizedUserId.insertedId) }), token: generateJWT(autorizedUserId.insertedId) };
 };
 
 export const logout = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -169,7 +168,7 @@ export const logout = async (req: express.Request, res: express.Response, next: 
     };
 
     setAuthCookie(res, token);
-    const unauthorizedUser = await collections.users?.findOne({ _id: new ObjectId(userId) });
+    const unauthorizedUser = await collections.users.findOne({ _id: new ObjectId(userId) });
 
     if (!unauthorizedUser) {
         return next(createError(401, 'No such unauthorized user'));

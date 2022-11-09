@@ -105,10 +105,6 @@ interface params {
     coll?: ('categories' | 'products' | 'brands' | 'favorites' | 'carts' | 'orders')[] | 'all',
 }
 
-type localsBrand = {
-    name: string, translated: string
-}
-
 export default function fetchFromDB({ limit = 100, coll = 'all' }: params = {}) {
     return async function fetchFromDB(req: express.Request, res: express.Response, next: express.NextFunction) {
         let { page, onpage, sorting, ...query } = (req as RequestCustom).queryBD || {};
@@ -137,8 +133,8 @@ export default function fetchFromDB({ limit = 100, coll = 'all' }: params = {}) 
         };
 
         if (query.brand) {
-            const brands = await collections.products?.distinct("brand");
-            const translatedBrands = brands?.map(brandName => { return { name: brandName, translated: translit(brandName) } });
+            const brands = await collections.products.distinct("brand");
+            const translatedBrands = brands.map(brandName => { return { name: brandName, translated: translit(brandName) } });
             if (translatedBrands) {
                 query.brand = translatedBrands.find(brand => brand.translated == query.brand)?.name || '';
             };
@@ -153,31 +149,31 @@ export default function fetchFromDB({ limit = 100, coll = 'all' }: params = {}) 
         const promises = collectionsToFetch.reduce((acc, col) => {
             if (col == 'products') {
                 if (search) {
-                    acc['products'] = limit ? collections.products?.aggregate(search.fullresults).sort(sort).skip(skip).limit(limit).toArray().then(res => promises['products'] = res) : collections.products?.aggregate(search.fullresults).sort(sort).toArray().then(res => promises['products'] = res);
+                    acc['products'] = limit ? collections.products.aggregate(search.fullresults).sort(sort).skip(skip).limit(limit).toArray().then(res => promises['products'] = res) : collections.products.aggregate(search.fullresults).sort(sort).toArray().then(res => promises['products'] = res);
                 } else {
-                    acc['products'] = limit ? collections.products?.find(query).sort(sort).skip(skip).limit(limit).toArray().then(res => acc['products'] = res) : collections.products?.find(query).sort(sort).toArray().then(res => acc['products'] = res);
+                    acc['products'] = limit ? collections.products.find(query).sort(sort).skip(skip).limit(limit).toArray().then(res => acc['products'] = res) : collections.products.find(query).sort(sort).toArray().then(res => acc['products'] = res);
                 };
             } else
                 if (col == 'brands') {
-                    acc['brands'] = collections.products?.distinct("brand").then(res => {
+                    acc['brands'] = collections.products.distinct("brand").then(res => {
                         acc['brands'] = createBrandBreadCrumps(res);
                     });
                 } else
                     if (col == 'productsQty') {
-                        acc['productsQty'] = search ? collections.products?.aggregate(search.ResultsQty).toArray().then(res => promises['productsQty'] = res[0]?.searchResults) : collections.products?.countDocuments(query).then(res => acc['productsQty'] = res);
+                        acc['productsQty'] = search ? collections.products.aggregate(search.ResultsQty).toArray().then(res => promises['productsQty'] = res[0]?.searchResults) : collections.products.countDocuments(query).then(res => acc['productsQty'] = res);
                     } else
                         if (col == 'favorites' || col == 'carts') {
                             let id = (col === 'carts') ? user.cart : user[col];
                             if (!id) return acc;
-                            acc[col] = collections[col]?.findOne({ _id: new ObjectId(id) }).then(res => acc[col] = res);
+                            acc[col] = collections[col].findOne({ _id: new ObjectId(id) }).then(res => acc[col] = res);
                         } else
                             if (col == 'orders') {
                                 let id = user.orders;
                                 if (!id) return acc;
-                                acc['orders'] = id.map(orderID => collections.orders?.findOne({ _id: new ObjectId(orderID) }).then(res => acc['orders'] = res));
+                                acc['orders'] = id.map(orderID => collections.orders.findOne({ _id: new ObjectId(orderID) }).then(res => acc['orders'] = res));
                             } else
                                 if (col == 'categories') {
-                                    acc['categories'] = collections.categories?.find().toArray().then(res => acc['categories'] = createCategoryBreadCrumps(res));
+                                    acc['categories'] = collections.categories.find().toArray().then(res => acc['categories'] = createCategoryBreadCrumps(res));
                                 };
             return acc;
         }, {} as Record<string, any>);

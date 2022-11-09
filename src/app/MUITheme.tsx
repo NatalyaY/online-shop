@@ -24,6 +24,7 @@ const themeOptions: ThemeOptions = {
         secondary: {
             main: '#F0F2F3',
             dark: '#636270',
+            light: '#9A9CAA',
             contrastText: '#272343',
 
         },
@@ -59,6 +60,9 @@ const themeOptions: ThemeOptions = {
         },
         h5: {
             fontSize: '1.25rem',
+        },
+        h6: {
+            fontSize: '1rem',
         },
         subtitle1: {
             fontSize: '1.125rem',

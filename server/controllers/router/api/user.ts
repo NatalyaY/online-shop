@@ -9,10 +9,10 @@ import { login, logout, signUp } from '../../middleware/authservice';
 
 const router = express.Router();
 
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res, next) => {
     const { phone, password } = req.body;
     if (!phone || !password) {
-        throw createError(500, `Error while creating user in DB`);
+        return next(createError(500, `Error while creating user in DB`));
     };
     try {
         const { user, token } = await login((req as RequestCustom).currentUser, phone, password);
@@ -31,7 +31,6 @@ router.post('/login', async (req, res) => {
 
 router.post('/signUp', async (req, res) => {
     const { phone, password } = req.body;
-    console.log(phone + ' phobe');
     if (!phone || !password) {
         throw createError(500, `Error while creating user in DB`);
     };
@@ -59,10 +58,10 @@ router.get('/logout', logout, (req, res) => {
 
 router.post('/', async (req, res) => {
     const currentUser = (req as RequestCustom).currentUser;
-    await collections.users?.updateOne({ _id: new ObjectId(currentUser._id) }, req.body);
+    await collections.users.updateOne({ _id: new ObjectId(currentUser._id) }, req.body);
 
     try {
-        const updatedUser = await collections.users?.findOne({ _id: new ObjectId(currentUser._id) });
+        const updatedUser = await collections.users.findOne({ _id: new ObjectId(currentUser._id) });
         res
             .status(200)
             .json(updatedUser);
@@ -77,10 +76,10 @@ router.post('/', async (req, res) => {
 
 router.delete('/', async (req, res) => {
     const currentUser = (req as RequestCustom).currentUser;
-    await collections.users?.updateOne({ _id: new ObjectId(currentUser._id) }, { $unset: req.body });
+    await collections.users.updateOne({ _id: new ObjectId(currentUser._id) }, { $unset: req.body });
 
     try {
-        const updatedUser = await collections.users?.findOne({ _id: new ObjectId(currentUser._id) });
+        const updatedUser = await collections.users.findOne({ _id: new ObjectId(currentUser._id) });
         res
             .status(200)
             .json(updatedUser);

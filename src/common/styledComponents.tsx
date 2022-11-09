@@ -1,10 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Toolbar, IconButton, Link, InputBase, IconButtonProps, Chip, ChipProps, Typography } from '@mui/material';
+import { Toolbar, IconButton, Link, InputBase, IconButtonProps, Chip, ChipProps, Typography, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { styled, alpha } from '@mui/material/styles';
 import { IMaskInput } from 'react-imask';
-import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
+import { useTheme } from '@mui/material/styles';
 
+import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 interface StyledIconButtonProps extends IconButtonProps {
     href?: string;
@@ -59,11 +61,7 @@ export const ToolbarWithWrap = styled(Toolbar)(({ theme }) => ({
 
 const LogoLink = styled(Link)(({ theme }) => ({
     display: 'flex',
-    justifyContent: 'center',
     alignItems: 'center',
-    '&.active': {
-        color: 'inherit'
-    },
     [theme.breakpoints.down('md')]: {
         flexGrow: '1',
         justifyContent: 'flex-start',
@@ -74,30 +72,80 @@ const LogoLink = styled(Link)(({ theme }) => ({
     },
 }));
 
-export const Logo = () => {
+export const Logo = ({ flexible = true }) => {
+    const Container = (props: React.PropsWithChildren) => {
+        return (
+            flexible ?
+                <LogoLink href="/" role={'directory'}>{props.children}</LogoLink> :
+                <Link href="/" role={'directory'} sx={{ display: 'flex', alignItems: 'center' }}>{props.children}</Link>
+        )
+    }
     return (
-        <LogoLink href="/">
+        <Container>
             <CardGiftcardIcon color="primary" fontSize="large" />
-            <Typography variant='h2' component={'span'} sx={{ fontSize: { xs: '14px', sm: '26px' }, fontWeight: 600 }}>Gifty</Typography>
-        </LogoLink>
+            <Typography variant='h2' component={'span'} sx={{ fontSize: { xs: flexible ? '14px' : '26px', sm: '26px' }, fontWeight: 600 }}>Gifty</Typography>
+        </Container>
     )
 }
 
+export const ResponsiveAccordion = (props: React.PropsWithChildren & { title: string }) => {
+    const theme = useTheme();
+    const [accordionExpanded, setAccordionExpanded] = React.useState(true);
+    const [accordionIconVisibility, setAccordionIconVisibility] = React.useState(false);
+
+    const onResize = () => {
+        setAccordionExpanded(window.innerWidth >= theme.breakpoints.values.sm ? true : false);
+        setAccordionIconVisibility(window.innerWidth >= theme.breakpoints.values.sm ? false : true)
+    };
+
+    const handleAccordionExpand = () => {
+        if (window.innerWidth >= theme.breakpoints.values.sm) return;
+        setAccordionExpanded(!accordionExpanded);
+    };
+
+    React.useEffect(() => {
+        onResize()
+        window.addEventListener("resize", onResize);
+        return () => {
+            window.removeEventListener('resize', onResize)
+        };
+    }, []);
+
+    return (
+        <Accordion expanded={accordionExpanded} onChange={handleAccordionExpand} sx={{ boxShadow: 0, '&:before': { display: 'none' }, '&.Mui-expanded': { m: 0 } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ opacity: accordionIconVisibility ? 1 : 0 }} />} sx={{ p: 0, minHeight: 0, '& .MuiAccordionSummary-content': { m: 0 }, '& .MuiAccordionSummary-content.Mui-expanded': { m: 0, pb: 1, cursor: 'text' }, '&.Mui-expanded': { minHeight: 0 } }}>
+                <Typography variant="body1" component={'h6'} textTransform={'uppercase'} sx={{ color: 'text.disabled', fontWeight: 500 }}>{props.title}</Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ p: 0 }}>
+                {props.children}
+            </AccordionDetails>
+        </Accordion>
+    )
+};
+
+export const SearchContainer = styled('div')(({ theme }) => ({
+    flex: 1,
+    order: 4,
+    flexBasis: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '10px',
+    [theme.breakpoints.up('md')]: {
+        margin: theme.spacing(0, 2),
+        order: 2,
+    },
+}));
 
 export const Search = styled('div')(({ theme }) => ({
     position: 'relative',
     borderRadius: '5px',
     backgroundColor: theme.palette.common.white,
-    flex: 1,
-    order: 4,
-    marginTop: '10px',
     '&:hover': {
         backgroundColor: alpha(theme.palette.common.white, 0.65),
     },
     width: '100%',
     [theme.breakpoints.up('md')]: {
-        margin: theme.spacing(0, 2),
-        order: 2,
+        maxWidth: 500,
     },
 }));
 

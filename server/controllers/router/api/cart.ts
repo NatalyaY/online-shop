@@ -13,9 +13,9 @@ router.post('/', async (req, res) => {
     const user = (req as RequestCustom).currentUser;
     if (!user) throw createError(500, `No user found`);
     if (user.cart) {
-        await collections.carts?.updateOne({ _id: user.cart }, { $push: { items: _id } });
+        await collections.carts.updateOne({ _id: user.cart }, { $push: { items: _id } });
     } else {
-        await collections.carts?.insertOne({
+        await collections.carts.insertOne({
             userId: user._id!,
             items: [_id]
         });
@@ -28,12 +28,12 @@ router.delete('/', async (req, res) => {
     const user = (req as RequestCustom).currentUser;
     if (!user) throw createError(500, `No user found`);
     if (user.cart) {
-        const userCart = await collections.carts?.findOne({ _id: user.cart });
+        const userCart = await collections.carts.findOne({ _id: user.cart });
         if (userCart!.items.length == 1 && userCart!.items[0] == _id) {
-            await collections.carts?.deleteOne({ _id: user.cart });
-            await collections.users?.updateOne({ _id: user._id }, { $unset: { cart: "" } });
+            await collections.carts.deleteOne({ _id: user.cart });
+            await collections.users.updateOne({ _id: user._id }, { $unset: { cart: "" } });
         } else {
-            await collections.carts?.updateOne({ _id: user.cart }, { $pull: { items: _id } });
+            await collections.carts.updateOne({ _id: user.cart }, { $pull: { items: _id } });
         };
     } else {
         throw createError(500, `No cart`);

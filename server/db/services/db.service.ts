@@ -6,16 +6,18 @@ import Product from "./../models/product";
 import Favorite from './../models/favorite';
 import Cart from './../models/cart';
 import Order from './../models/order';
+import Subscriber from './../models/subscriber';
 
 
-export const collections: {
-    categories?: mongoDB.Collection<Category>,
-    products?: mongoDB.Collection<Product>,
-    users?: mongoDB.Collection<User>,
-    favorites?: mongoDB.Collection<Favorite>,
-    carts?: mongoDB.Collection<Cart>,
-    orders?: mongoDB.Collection<Order>,
-} = {};
+export let collections: {
+    categories: mongoDB.Collection<Category>,
+    products: mongoDB.Collection<Product>,
+    users: mongoDB.Collection<User>,
+    favorites: mongoDB.Collection<Favorite>,
+    carts: mongoDB.Collection<Cart>,
+    orders: mongoDB.Collection<Order>,
+    subscribers: mongoDB.Collection<Subscriber>,
+};
 
 export async function connectToDatabase() {
     dotenv.config();
@@ -30,13 +32,17 @@ export async function connectToDatabase() {
     const favorites = db.collection<Favorite>(process.env.FAVORITES_COLLECTION_NAME!);
     const carts = db.collection<Cart>(process.env.CARTS_COLLECTION_NAME!);
     const orders = db.collection<Order>(process.env.ORDERS_COLLECTION_NAME!);
+    const subscribers = db.collection<Subscriber>(process.env.SUBSCRIBERS_COLLECTION_NAME!);
 
-    collections.categories = categories;
-    collections.products = products;
-    collections.users = users;
-    collections.favorites = favorites;
-    collections.carts = carts;
-    collections.orders = orders;
+    collections = {
+        categories,
+        products,
+        users,
+        favorites,
+        carts,
+        orders,
+        subscribers
+    };
 
     console.log(
         `Successfully connected to database: ${db.databaseName} and collection: ${categories.collectionName}!`,

@@ -47,7 +47,7 @@ router.get('/all', fetchFromDB({ limit: false, coll: ['products'] }), async (req
 router.get('/autocomplete', getQueryFromSearchParams, async (req, res) => {
     try {
         const search = (req as RequestCustom).searchQueries;
-        const result = await collections.products?.aggregate(search.autocomplete).toArray();
+        const result = await collections.products.aggregate(search.autocomplete).toArray();
         const normalizedResult = result?.map((product) => {
             product.description = product.description?.replace(/<br \/>/g, '\n');
             return product;

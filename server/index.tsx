@@ -26,17 +26,18 @@ app.use(
 app.use('/api', apiRoter);
 app.use('/', mainRoter);
 
+
 app.ws('/watch', (ws, req) => {
     const user = (req as RequestCustom).currentUser;
-    const categoriesWatchCursor = collections.categories?.watch([], { fullDocument: "updateLookup" });
-    const productsWatchCursor = collections.products?.watch([], { fullDocument: "updateLookup" });
+    const categoriesWatchCursor = collections.categories.watch([], { fullDocument: "updateLookup" });
+    const productsWatchCursor = collections.products.watch([], { fullDocument: "updateLookup" });
     const pipeline = [
         { $match: { 'fullDocument._id': user._id } }
     ];
-    const ordersWatchCursor = collections.orders?.watch(pipeline, { fullDocument: "updateLookup" });
+    const ordersWatchCursor = collections.orders.watch(pipeline, { fullDocument: "updateLookup" });
 
     [categoriesWatchCursor, productsWatchCursor, ordersWatchCursor].forEach(cursor => {
-        cursor!.on('change', (change) => {
+        cursor.on('change', (change) => {
             ws.send(JSON.stringify(change));
         });
     });

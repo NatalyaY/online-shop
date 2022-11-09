@@ -6,10 +6,11 @@ import getSocket from '../common/client_socket';
 
 
 import ClassDefault from '../components/ClassDefault';
-import Comp2 from '../components/Comp2';
+import Footer from '../components/Footer';
 import Header from '../components/Header';
 import Error from '../components/Error';
 
+import {Container} from '@mui/material';
 
 
 function App() {
@@ -29,13 +30,17 @@ function App() {
   return (
     <>
       <Header />
-      <Routes>
-        <Route path='*' element={<Error />} />
-        <Route path="/" element={<ClassDefault />} />
-        <Route path="/stat" element={<Comp2 />} />
-        <Route path="/brands/*" element={<ClassDefault />} />
-        <Route path="/search/?:search" element={<Error />} />
-      </Routes>
+      <main>
+        <Container maxWidth="xl">
+          <Routes>
+            <Route path='*' element={<Error />} />
+            <Route path="/" element={<ClassDefault />} />
+            <Route path="/brands/*" element={<ClassDefault />} />
+            <Route path="/search/?:search" element={<Error />} />
+          </Routes>
+        </Container>
+      </main>
+      <Footer />
     </>
   )
 }

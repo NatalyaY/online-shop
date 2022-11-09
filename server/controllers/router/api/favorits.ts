@@ -13,9 +13,9 @@ router.post('/', async (req, res) => {
     const user = (req as RequestCustom).currentUser;
     if (!user) throw createError(500, `No user found`);
     if (user.favorites) {
-        await collections.favorites?.updateOne({ _id: user.favorites }, { $push: { items: _id } });
+        await collections.favorites.updateOne({ _id: user.favorites }, { $push: { items: _id } });
     } else {
-        await collections.favorites?.insertOne({
+        await collections.favorites.insertOne({
             userId: user._id!,
             items: [_id]
         });
@@ -28,12 +28,12 @@ router.delete('/', async (req, res) => {
     const user = (req as RequestCustom).currentUser;
     if (!user) throw createError(500, `No user found`);
     if (user.favorites) {
-        const userFavorits = await collections.favorites?.findOne({ _id: user.favorites });
+        const userFavorits = await collections.favorites.findOne({ _id: user.favorites });
         if (userFavorits!.items.length == 1 && userFavorits!.items[0] == _id) {
-            await collections.favorites?.deleteOne({ _id: user.favorites });
-            await collections.users?.updateOne({ _id: user._id }, { $unset: { favorits: "" } });
+            await collections.favorites.deleteOne({ _id: user.favorites });
+            await collections.users.updateOne({ _id: user._id }, { $unset: { favorits: "" } });
         } else {
-            await collections.favorites?.updateOne({ _id: user.favorites }, { $pull: { items: _id } });
+            await collections.favorites.updateOne({ _id: user.favorites }, { $pull: { items: _id } });
         };
     } else {
         throw createError(500, `No favorits`);
