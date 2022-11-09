@@ -1,4 +1,4 @@
-import express, { application } from 'express';
+import express from 'express';
 
 import { RequestCustom, breadcrump } from '../../helpers';
 import { collections } from '../../db/services/db.service';
@@ -102,10 +102,11 @@ function createBrandBreadCrumps(brands: string[]) {
 
 interface params {
     limit?: number | false,
+    autocomplete?: boolean,
     coll?: ('categories' | 'products' | 'brands' | 'favorites' | 'carts' | 'orders')[] | 'all',
 }
 
-export default function fetchFromDB({ limit = 100, coll = 'all' }: params = {}) {
+export default function fetchFromDB({ limit = 100, coll = 'all', autocomplete = false }: params = {}) {
     return async function fetchFromDB(req: express.Request, res: express.Response, next: express.NextFunction) {
         let { page, onpage, sorting, ...query } = (req as RequestCustom).queryBD || {};
         const search = (req as RequestCustom).searchQueries;
@@ -149,7 +150,11 @@ export default function fetchFromDB({ limit = 100, coll = 'all' }: params = {}) 
         const promises = collectionsToFetch.reduce((acc, col) => {
             if (col == 'products') {
                 if (search) {
-                    acc['products'] = limit ? collections.products.aggregate(search.fullresults).sort(sort).skip(skip).limit(limit).toArray().then(res => promises['products'] = res) : collections.products.aggregate(search.fullresults).sort(sort).toArray().then(res => promises['products'] = res);
+                    if (autocomplete) {
+                        acc['products'] = collections.products.aggregate(search.autocomplete).toArray().then(res => promises['products'] = res);
+                    } else {
+                        acc['products'] = limit ? collections.products.aggregate(search.fullresults).skip(skip).limit(limit).toArray().then(res => promises['products'] = res) : collections.products.aggregate(search.fullresults).toArray().then(res => promises['products'] = res);
+                    };
                 } else {
                     acc['products'] = limit ? collections.products.find(query).sort(sort).skip(skip).limit(limit).toArray().then(res => acc['products'] = res) : collections.products.find(query).sort(sort).toArray().then(res => acc['products'] = res);
                 };
@@ -183,6 +188,12 @@ export default function fetchFromDB({ limit = 100, coll = 'all' }: params = {}) 
                 product.description = product.description?.replace(/<br \/>/g, '\n');
                 return product;
             });
+            if (promises.products_autocomplete) {
+                promises.products_autocomplete = createProductBreadCrumps(promises.products_autocomplete, promises.categories).map((product) => {
+                    product.description = product.description?.replace(/<br \/>/g, '\n');
+                    return product;
+                });
+            };
             (req as RequestCustom).fetchedData = promises;
             next();
         });

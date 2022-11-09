@@ -44,17 +44,12 @@ router.get('/all', fetchFromDB({ limit: false, coll: ['products'] }), async (req
     };
 });
 
-router.get('/autocomplete', getQueryFromSearchParams, async (req, res) => {
+router.get('/autocomplete', getQueryFromSearchParams, fetchFromDB({ coll: ['products'], autocomplete: true }),  async (req, res) => {
     try {
-        const search = (req as RequestCustom).searchQueries;
-        const result = await collections.products.aggregate(search.autocomplete).toArray();
-        const normalizedResult = result?.map((product) => {
-            product.description = product.description?.replace(/<br \/>/g, '\n');
-            return product;
-        });
+        const data = (req as RequestCustom).fetchedData;
         res
             .status(200)
-            .json(normalizedResult);
+            .json(data.products);
     } catch (error) {
         const message = error instanceof Error || createError.isHttpError(error) ? error.message : error;
         const status = createError.isHttpError(error) ? error.statusCode : 500;

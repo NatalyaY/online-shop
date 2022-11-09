@@ -12,6 +12,8 @@ export default class Product {
         public categoryId: string,
         public creationDate: number,
         public popularity: number,
+        public salePrice?: number,
+        public discount?: number,
         public _id?: ObjectId,
         public box_height?: string,
         public box_length?: string,

@@ -5,7 +5,7 @@ import User from "./db/models/user";
 export interface RequestCustom extends express.Request {
     token: { id: ObjectId };
     currentUser: User,
-    queryBD: Record<string, string | number | {[key: string]: string | number} | ObjectId>,
+    queryBD: Record<string, any>,
     searchQueries: { [key: string]: any },
     fetchedData: any
 }

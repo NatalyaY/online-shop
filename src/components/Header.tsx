@@ -36,7 +36,6 @@ const Header: React.FC<{}> = () => {
     const cart = useSelector(selectCart);
     const theme = useTheme();
 
-
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [userMenuAnchorEl, setUserMenuAnchorEl] = React.useState<null | HTMLElement>(null);
     const [authOpened, setAuthOpened] = React.useState<boolean>(false);
@@ -97,8 +96,8 @@ const Header: React.FC<{}> = () => {
                     >
                         <NavigationMenu handleClose={handleClose} />
                     </Popover>
-                    <Logo/>
-                    <SearchBox/>
+                    <Logo />
+                    <SearchBox />
                     <Box sx={{ display: 'flex', gap: 1, order: 3 }}>
                         <StyledIconButton href="favorits">
                             <Badge badgeContent={favorits.items?.length} color="primary">

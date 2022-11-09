@@ -1,6 +1,12 @@
 import express from 'express';
 import { RequestCustom } from '../../helpers';
 import { ObjectId } from 'mongodb';
+import Category from './../../db/models/category';
+import { collections } from './../../db/services/db.service';
+
+export type categoryWithSub = Category & {
+    subcategories?: categoryWithSub[];
+};
 
 const searchParams = {
     category: 'categoryId',
@@ -11,7 +17,34 @@ const searchParams = {
     p: 'page',
     onpage: 'onpage',
     sorting: 'sorting',
+};
+
+const getCategoriesIds = async (id: Category['UUID']) => {
+    const categories = await collections.categories.find().toArray();
+    const getSubcategories = (cat: Category) => {
+        const subcategories = categories.filter(c => c._parentId == cat.UUID);
+        if (!subcategories.length) {
+            return cat;
+        };
+        const withSubcategory: categoryWithSub = { ...cat, subcategories: subcategories.map(getSubcategories) };
+        return withSubcategory;
+    };
+    const getIds = (cat: categoryWithSub) => {
+        ids.push(cat.UUID);
+        if (cat.subcategories) {
+            cat.subcategories.map(getIds);
+        };
+    };
+    const categoriesTree = categories.map(getSubcategories);
+    const category = categoriesTree.find(c => c.UUID == id);
+    const ids: string[] = [];
+    if (category) {
+        getIds(category);
+    };
+    return ids;
 }
+
+
 
 export async function getQueryFromSearchParams(req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
@@ -36,7 +69,12 @@ export async function getQueryFromSearchParams(req: express.Request, res: expres
         const category = path.match(CAT_REG)?.groups?.category || req.query.category;
         const brand = path.match(BRAND_REG)?.groups?.brand || req.query.brand;
 
-        if (category) search.category = category;
+        let categoryIds: string[];
+
+        if (category) {
+            search.category = category;
+            categoryIds = await getCategoriesIds(category as string);
+        };
         if (brand) search.brand = brand;
 
         if (search.s) {
@@ -44,6 +82,7 @@ export async function getQueryFromSearchParams(req: express.Request, res: expres
                 [
                     {
                         $search: {
+
                             compound: {
                                 should: [
                                     {
@@ -65,6 +104,14 @@ export async function getQueryFromSearchParams(req: express.Request, res: expres
                                         },
                                     }
                                 ],
+                                must: [
+                                    {
+                                        range: {
+                                            path: "amount",
+                                            "gt": 0,
+                                        },
+                                    }
+                                ]
                             },
                         },
                     },
@@ -145,6 +192,8 @@ export async function getQueryFromSearchParams(req: express.Request, res: expres
                             if (search[cur]) {
                                 acc[productProp] = { $gt: 0 };
                             };
+                        } else if (cur == 'category') {
+                            acc[productProp] = { $in: categoryIds }
                         } else {
                             acc[productProp] = search[cur] as keyof typeof search;
                         };

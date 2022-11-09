@@ -57,7 +57,7 @@ const SearchBox = () => {
                     value={search}
                     onKeyDown={handleSearchApply}
                     onChange={handleSearchChange}
-                    onBlur={() => setShowSearchResults(false)}
+                    onBlur={() => setTimeout(() => setShowSearchResults(false), 100)}
                     placeholder="Найти…"
                     inputProps={{ 'aria-label': 'search' }}
                 />
