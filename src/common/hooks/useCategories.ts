@@ -7,6 +7,15 @@ export type categoryWithSub = category & {
     subcategories?: categoryWithSub[];
 };
 
+export const getSubcategories = (cat: category, categories: category[]) => {
+    const subcategories = categories.filter(c => c._parentId == cat.UUID);
+    if (!subcategories.length) {
+        return cat;
+    };
+    const withSubcategory: categoryWithSub = { ...cat, subcategories: subcategories.map(cat => getSubcategories(cat, categories)) };
+    return withSubcategory;
+};
+
 const useCategories = (categoriesProp: ReturnType<typeof selectCategories> | undefined = undefined) => {
     const [categoriesTree, setCategoriesTree] = React.useState<categoryWithSub[]>([]);
     const [selectedIndex, setSelectedIndex] = React.useState(0);
@@ -14,17 +23,8 @@ const useCategories = (categoriesProp: ReturnType<typeof selectCategories> | und
     const categories = categoriesProp || useSelector(selectCategories);
     const categoriesCopy = JSON.parse(JSON.stringify(categories)) as typeof categories;
 
-    const getSubcategories = (cat: typeof categoriesCopy[number]) => {
-        const subcategories = categories.filter(c => c._parentId == cat.UUID);
-        if (!subcategories.length) {
-            return cat;
-        };
-        const withSubcategory: categoryWithSub = { ...cat, subcategories: subcategories.map(getSubcategories) };
-        return withSubcategory;
-    };
-
     React.useEffect(() => {
-        const categoriesTree = categoriesCopy.map(getSubcategories);
+        const categoriesTree = categoriesCopy.map(cat => getSubcategories(cat, categories));
         setCategoriesTree(categoriesTree);
     }, [categories])
 

@@ -3,6 +3,7 @@ import { RequestCustom } from '../../helpers';
 import { ObjectId } from 'mongodb';
 import Category from './../../db/models/category';
 import { collections } from './../../db/services/db.service';
+import { getSubcategories } from '../../../src/common/hooks/useCategories';
 
 export type categoryWithSub = Category & {
     subcategories?: categoryWithSub[];
@@ -21,21 +22,13 @@ const searchParams = {
 
 const getCategoriesIds = async (id: Category['UUID']) => {
     const categories = await collections.categories.find().toArray();
-    const getSubcategories = (cat: Category) => {
-        const subcategories = categories.filter(c => c._parentId == cat.UUID);
-        if (!subcategories.length) {
-            return cat;
-        };
-        const withSubcategory: categoryWithSub = { ...cat, subcategories: subcategories.map(getSubcategories) };
-        return withSubcategory;
-    };
     const getIds = (cat: categoryWithSub) => {
         ids.push(cat.UUID);
         if (cat.subcategories) {
             cat.subcategories.map(getIds);
         };
     };
-    const categoriesTree = categories.map(getSubcategories);
+    const categoriesTree = categories.map(cat => getSubcategories(cat, categories));
     const category = categoriesTree.find(c => c.UUID == id);
     const ids: string[] = [];
     if (category) {
