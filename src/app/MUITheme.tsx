@@ -2,7 +2,6 @@ import * as React from 'react';
 import { NavLink, NavLinkProps } from 'react-router-dom';
 import { createTheme, ThemeOptions } from '@mui/material/styles';
 import { LinkProps } from '@mui/material/Link';
-import LinkPropsVariantOverrides from "@mui/material/Link";
 
 
 const LinkBehavior = React.forwardRef<
@@ -12,6 +11,17 @@ const LinkBehavior = React.forwardRef<
     const { href, ...other } = props;
     return <NavLink ref={ref} to={href} {...other} />;
 });
+
+declare module '@mui/material/styles' {
+    interface BreakpointOverrides {
+        xs: true;
+        sm: true;
+        md: true;
+        lg: true;
+        xl: true;
+        xxl: true;
+    }
+}
 
 
 const themeOptions: ThemeOptions = {
@@ -97,11 +107,11 @@ const themeOptions: ThemeOptions = {
                         height: '2px',
                         backgroundColor: theme.palette.primary.main,
                         opacity: 0,
-                        display: ownerState.role == 'directory' ? 'none' : 'block',
+                        display: ownerState.className?.includes('woUnderline') ? 'none' : 'block',
                     },
                     '&:hover': {
                         opacity: 0.8,
-                        color: ownerState.role == 'directory' ? 'inherit' : theme.palette.primary.main,
+                        color: ownerState.className?.includes('woUnderline') ? null : theme.palette.primary.main,
                     },
                     '&:hover:after': {
                         opacity: 1
@@ -118,6 +128,16 @@ const themeOptions: ThemeOptions = {
             defaultProps: {
                 color: 'secondary',
             },
+        },
+    },
+    breakpoints: {
+        values: {
+            xs: 0,
+            sm: 600,
+            md: 900,
+            lg: 1200,
+            xl: 1536,
+            xxl: 1740,
         },
     },
 };

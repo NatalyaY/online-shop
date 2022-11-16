@@ -2,16 +2,16 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { selectCategories } from '../../features/categories/categoriesSlice';
 
-type category = ReturnType<typeof selectCategories>[0];
+type category = ReturnType<typeof selectCategories>[number];
 export type categoryWithSub = category & {
     subcategories?: categoryWithSub[];
 };
 
-const useCategories = () => {
-    const [categoriesTree, setCategoriesTree] = React.useState([] as categoryWithSub[]);
+const useCategories = (categoriesProp: ReturnType<typeof selectCategories> | undefined = undefined) => {
+    const [categoriesTree, setCategoriesTree] = React.useState<categoryWithSub[]>([]);
     const [selectedIndex, setSelectedIndex] = React.useState(0);
 
-    const categories = useSelector(selectCategories);
+    const categories = categoriesProp || useSelector(selectCategories);
     const categoriesCopy = JSON.parse(JSON.stringify(categories)) as typeof categories;
 
     const getSubcategories = (cat: typeof categoriesCopy[number]) => {

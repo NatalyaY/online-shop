@@ -1,7 +1,4 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
-import { useAppDispatch } from '../../common/generics';
-import { selectUser, SignUp, Login } from '../../features/user/userSlice';
 
 import {
     Typography,
@@ -16,6 +13,8 @@ import {
     Alert,
 } from '@mui/material';
 import { PhoneMaskedInput, Policy } from '../../common/styledComponents';
+import { type Login, type SignUp, type user } from '../../containers/Header_container';
+
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
@@ -23,11 +22,17 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import Fade from '@mui/material/Fade';
 
 
+interface Props {
+    type: 'login' | 'signUp',
+    setType: React.Dispatch<React.SetStateAction<"login" | "signUp">>,
+    user: user,
+    Login: Login,
+    SignUp: SignUp
+}
 
 
-const AuthForm: React.FC<{ type: 'login' | 'signUp', setType: React.Dispatch<React.SetStateAction<"login" | "signUp">> }> = ({ type, setType }) => {
-    const user = useSelector(selectUser);
-    const dispatch = useAppDispatch();
+
+const AuthForm: React.FC<Props> = ({ type, setType, Login, SignUp, user }) => {
 
     const [phone, setPhone] = React.useState('');
     const [phoneComplete, setPhoneComplete] = React.useState(false);
@@ -65,7 +70,7 @@ const AuthForm: React.FC<{ type: 'login' | 'signUp', setType: React.Dispatch<Rea
         };
         if (phoneError || passwordError) return;
         setisValidated(true);
-        type == 'login' ? dispatch(Login({ phone, password })) : dispatch(SignUp({ phone, password }));
+        type == 'login' ? Login({ phone, password }) : SignUp({ phone, password });
     }
 
 

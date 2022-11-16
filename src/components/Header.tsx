@@ -1,5 +1,4 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
 
 import {
     Typography,
@@ -21,44 +20,48 @@ import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import PermIdentityRoundedIcon from '@mui/icons-material/PermIdentityRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
-import { selectUser } from '../features/user/userSlice';
-import { selectFavorits } from '../features/favorits/favoritsSlice';
-import { selectCart } from '../features/cart/cartSlice';
 import SearchBox from './header_components/SearchBox';
 import AuthForm from './header_components/AuthForm';
 import UserMenu from './header_components/UserMenu';
 import NavigationMenu from './header_components/NavigationMenu';
+import { type user, type favorits, type cart, type Login, type SignUp, type brands, type GetAutocompleteProducts, type LogOut } from '../containers/Header_container';
+
+interface Props {
+    user: user,
+    favorits: favorits,
+    cart: cart,
+    Login: Login,
+    SignUp: SignUp,
+    brands: brands,
+    GetAutocompleteProducts: GetAutocompleteProducts,
+    LogOut: LogOut
+}
 
 
-const Header: React.FC<{}> = () => {
-    const user = useSelector(selectUser);
-    const favorits = useSelector(selectFavorits);
-    const cart = useSelector(selectCart);
+const Header: React.FC<Props> = ({ user, favorits, cart, Login, SignUp, brands, GetAutocompleteProducts, LogOut }) => {
     const theme = useTheme();
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [userMenuAnchorEl, setUserMenuAnchorEl] = React.useState<null | HTMLElement>(null);
     const [authOpened, setAuthOpened] = React.useState<boolean>(false);
     const [authType, setAuthType] = React.useState<'login' | 'signUp'>('login');
-    const [headerZIndex, setheaderZIndex] = React.useState(0);
+    const [headerZIndex, setheaderZIndex] = React.useState(5);
 
     const navigationMenuOpen = Boolean(anchorEl);
     const userMenuOpen = Boolean(userMenuAnchorEl);
     const authMenuOpen = authOpened && user.state == 'unauthorized';
 
-    const header = anchorEl && anchorEl.closest('header') as HTMLElement;
-    const width = anchorEl ? anchorEl.clientWidth + 16 : 'auto';
-    const height = header ? window.innerHeight - header.clientHeight - 16 : 'auto';
+    const height = anchorEl ? window.innerHeight - anchorEl.clientHeight : 'auto';
     const right = userMenuAnchorEl ? userMenuAnchorEl.clientWidth / 2 : 0;
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
-        anchorEl ? setAnchorEl(null) : setAnchorEl(event.currentTarget.closest('.MuiToolbar-root') as HTMLElement);
+        anchorEl ? setAnchorEl(null) : setAnchorEl(event.currentTarget.closest('header') as HTMLElement);
         setheaderZIndex(1600);
     };
     const handleClose = () => {
         setAnchorEl(null);
-        setTimeout(() => setheaderZIndex(0), theme.transitions.duration.leavingScreen);
+        setTimeout(() => setheaderZIndex(5), theme.transitions.duration.leavingScreen);
     };
     const handleUserMenuClose = () => {
         setUserMenuAnchorEl(null)
@@ -85,19 +88,22 @@ const Header: React.FC<{}> = () => {
                         onClose={handleClose}
                         anchorOrigin={{
                             vertical: 'bottom',
-                            horizontal: 'right',
+                            horizontal: 'center',
                         }}
                         transformOrigin={{
-                            horizontal: 'right',
+                            horizontal: 'center',
                             vertical: 'top',
                         }}
+                        marginThreshold={0}
                         elevation={0}
-                        PaperProps={{ sx: { pt: 5, pb: 5, pl: 2, display: 'flex', flexDirection: 'row', width: width, height: height, zIndex: 1199 } }}
+                        PaperProps={{ sx: { width: '100%', maxWidth: 'unset', height: height, maxHeight: 'unset' } }}
                     >
-                        <NavigationMenu handleClose={handleClose} />
+                        <Container maxWidth="xl" sx={{ py: 5, display: 'flex', flexDirection: 'row', height: '100%', zIndex: 1199, width: '100%' }}>
+                            <NavigationMenu handleClose={handleClose} brands={brands} />
+                        </Container>
                     </Popover>
                     <Logo />
-                    <SearchBox />
+                    <SearchBox GetAutocompleteProducts={GetAutocompleteProducts} />
                     <Box sx={{ display: 'flex', gap: 1, order: 3 }}>
                         <StyledIconButton href="favorits">
                             <Badge badgeContent={favorits.items?.length} color="primary">
@@ -153,7 +159,7 @@ const Header: React.FC<{}> = () => {
                                     horizontal: 'right',
                                 }}
                             >
-                                <UserMenu handleClose={handleUserMenuClose} setAuthOpened={setAuthOpened} setAuthType={setAuthType} />
+                                <UserMenu handleClose={handleUserMenuClose} setAuthOpened={setAuthOpened} setAuthType={setAuthType} LogOut={LogOut} user={user} />
                             </Popover>
                         </StyledIconButton>
                         <Modal
@@ -161,7 +167,7 @@ const Header: React.FC<{}> = () => {
                             onClose={() => setAuthOpened(false)}
                             sx={{ zIndex: '1700' }}
                         >
-                            <><AuthForm type={authType} setType={setAuthType} /></>
+                            <><AuthForm type={authType} setType={setAuthType} Login={Login} SignUp={SignUp} user={user} /></>
                         </Modal>
                     </Box>
                 </ToolbarWithWrap>

@@ -1,29 +1,24 @@
 import React, { useEffect } from 'react';
-import { NavLink, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { fetchAllProducts } from '../features/products/productsSlice';
 import { useAppDispatch, useAppSelector } from '../common/generics';
 import getSocket from '../common/client_socket';
+import useAllProducts from '../common/hooks/useAllProducts';
 
 
 import ClassDefault from '../components/ClassDefault';
-import Footer from '../components/Footer';
-import Header from '../components/Header';
+import Home from '../components/Home';
+import Header from '../containers/Header_container';
+import Footer from '../containers/Footer_container';
 import Error from '../components/Error';
 
-import {Container} from '@mui/material';
 
 
-function App() {
 
-  const dispatch = useAppDispatch();
-  const productsStatus = useAppSelector((state) => state.products.status);
-  let isLoading = false;
+const App = () => {
+  useAllProducts();
 
   useEffect(() => {
-    if (!isLoading && productsStatus != 'loading') {
-      isLoading = true;
-      dispatch(fetchAllProducts());
-    };
     getSocket();
   }, [])
 
@@ -31,14 +26,12 @@ function App() {
     <>
       <Header />
       <main>
-        <Container maxWidth="xl">
-          <Routes>
-            <Route path='*' element={<Error />} />
-            <Route path="/" element={<ClassDefault />} />
-            <Route path="/brands/*" element={<ClassDefault />} />
-            <Route path="/search/?:search" element={<Error />} />
-          </Routes>
-        </Container>
+        <Routes>
+          <Route path='*' element={<Error />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/brands/*" element={<ClassDefault />} />
+          <Route path="/search/?:search" element={<Error />} />
+        </Routes>
       </main>
       <Footer />
     </>

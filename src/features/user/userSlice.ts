@@ -100,8 +100,7 @@ export const logOut = createAsyncThunk<
 const userSlice = createSlice({
     name: 'user',
     initialState,
-    reducers: {
-    },
+    reducers: {},
     extraReducers: (builder) => {
         extraReducers(builder);
         builder.addCase(Login.fulfilled, (state, action) => {

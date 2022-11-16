@@ -1,7 +1,4 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
-import { useAppDispatch } from '../../common/generics';
-import { selectUser, logOut } from '../../features/user/userSlice';
 
 import {
     Typography,
@@ -16,10 +13,17 @@ import {
 import PermIdentityRoundedIcon from '@mui/icons-material/PermIdentityRounded';
 import TakeoutDiningIcon from '@mui/icons-material/TakeoutDining';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { type user, type LogOut } from '../../containers/Header_container';
 
-const UserMenu: React.FC<{ handleClose: () => void, setAuthOpened: (val: boolean) => void, setAuthType: (val: 'login' | 'signUp') => void }> = ({ handleClose, setAuthOpened, setAuthType }) => {
-    const user = useSelector(selectUser);
-    const dispatch = useAppDispatch();
+interface Props {
+    handleClose: () => void,
+    setAuthOpened: (val: boolean) => void,
+    setAuthType: (val: 'login' | 'signUp') => void,
+    user: user,
+    LogOut: LogOut
+}
+
+const UserMenu: React.FC<Props> = ({ handleClose, setAuthOpened, setAuthType, user, LogOut }) => {
     if (user.state === 'unauthorized') {
         return (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 180, alignItems: 'center' }}>
@@ -33,7 +37,7 @@ const UserMenu: React.FC<{ handleClose: () => void, setAuthOpened: (val: boolean
         return (
             <MenuList>
                 <MenuItem sx={{ p: 0, pb: 2, '&:hover': { backgroundColor: 'transparent' } }} divider={true}>
-                    <Link href="my" onClick={handleClose} sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Link href="my" onClick={handleClose} sx={{ display: 'flex', gap: 2, alignItems: 'center' }} className='woUnderline'>
                         <Avatar><PermIdentityRoundedIcon /></Avatar>
                         <Box>
                             <Typography variant="body1" component={'p'} sx={{ fontWeight: 600 }}>{user.name || 'Имя не указано'}</Typography>
@@ -43,13 +47,13 @@ const UserMenu: React.FC<{ handleClose: () => void, setAuthOpened: (val: boolean
                     </Link>
                 </MenuItem>
                 <MenuItem sx={{ p: 0, pt: 2, '&:hover': { backgroundColor: 'transparent' } }}>
-                    <Link href="my/orders" onClick={handleClose} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <Link href="my/orders" onClick={handleClose} sx={{ display: 'flex', gap: 1, alignItems: 'center' }} className='woUnderline'>
                         <TakeoutDiningIcon sx={{ color: 'primary.main' }} />
                         <Typography variant="body1" component={'p'}>Мои заказы</Typography>
                     </Link>
                 </MenuItem>
                 <MenuItem sx={{ p: 0, pt: 2, '&:hover': { backgroundColor: 'transparent' } }}>
-                    <Button variant='outlined' color='error' onClick={() => { dispatch(logOut()); handleClose(); setAuthOpened(false) }} sx={{ display: 'flex', gap: 1, alignItems: 'center', textTransform: 'none', }}>
+                    <Button variant='outlined' color='error' onClick={() => { LogOut(); handleClose(); setAuthOpened(false) }} sx={{ display: 'flex', gap: 1, alignItems: 'center', textTransform: 'none', }}>
                         <LogoutIcon fontSize='small' />
                         <Typography variant="body1" component={'p'}>Выйти</Typography>
                     </Button>

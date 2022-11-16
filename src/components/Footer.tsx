@@ -20,10 +20,11 @@ import {
 
 import LoadingButton from '@mui/lab/LoadingButton';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import { type Subscribe } from '../containers/Footer_container';
 
 
 
-const Footer = () => {
+const Footer: React.FC<{ Subscribe: Subscribe }> = ({ Subscribe }) => {
 
     const { topLevelCategories } = useCategories();
     const servicePages = [
@@ -56,13 +57,7 @@ const Footer = () => {
         if (validationSuccess) return;
         setLoading(true);
 
-        const res = await (await fetch('/api/subscribe', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json;charset=utf-8'
-            },
-            body: JSON.stringify({ email })
-        })).json();
+        const res = await Subscribe(email);
         setLoading(false);
         setIsValidated(true);
         if (res.error) {

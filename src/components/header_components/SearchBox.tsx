@@ -12,19 +12,18 @@ import {
 } from '@mui/material';
 
 import { Search, SearchIconWrapper, StyledInputBase, SearchContainer } from '../../common/styledComponents';
+import { type GetAutocompleteProducts } from '../../containers/Header_container';
+
 import SearchIcon from '@mui/icons-material/Search';
-import ImageIcon from '@mui/icons-material/Image';
 import ImageNotSupportedIcon from '@mui/icons-material/ImageNotSupported';
 
-import Product from '../../../server/db/models/product';
 
-
-const SearchBox = () => {
+const SearchBox: React.FC<{ GetAutocompleteProducts: GetAutocompleteProducts }> = ({ GetAutocompleteProducts }) => {
 
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [search, setSearch] = React.useState('');
-    const [searchResults, setSearchResults] = React.useState<null | Product[]>(null);
+    const [searchResults, setSearchResults] = React.useState<Awaited<ReturnType<GetAutocompleteProducts>>>(null);
     const [showSearchResults, setShowSearchResults] = React.useState<boolean>(false);
 
     React.useEffect(() => {
@@ -41,8 +40,7 @@ const SearchBox = () => {
         setSearch(e.target.value);
         if (e.target.value != '') {
             setShowSearchResults(true);
-            const products = await (await fetch(`/api/products/autocomplete?s=${e.target.value}`)).json();
-            setSearchResults(products.length ? products : null);
+            setSearchResults(await GetAutocompleteProducts(e.target.value));
         } else {
             setSearchResults(null);
         };
@@ -76,7 +74,7 @@ const SearchBox = () => {
                                 <MenuItem key={product._id as unknown as string}>
                                     <Link
                                         href={product.breadcrumps ? product.breadcrumps[product.breadcrumps?.length - 1].link : '/'}
-                                        role='directory'
+                                        className='woUnderline'
                                         sx={{
                                             width: '100%',
                                             display: 'flex',

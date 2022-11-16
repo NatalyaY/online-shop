@@ -1,7 +1,4 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
-
-import { selectBrands } from '../../features/brands/brandsSlice';
 
 import {
     Typography,
@@ -17,20 +14,25 @@ import { RouterChip } from '../../common/styledComponents';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import useCategories, { type categoryWithSub } from '../../common/hooks/useCategories';
+import { type brands } from '../../containers/Header_container';
+import { ResponsiveAccordion } from './../../common/styledComponents';
+import { useWindowWidth } from './../../common/hooks/useWindowWidth';
 
 interface IRPMenuLeft {
     selectedIndex: number,
     brandSelected: boolean,
     setBrandSelected: (val: boolean) => void,
     setSelectedIndex: (index: number) => void,
-    categories: categoryWithSub[]
+    categories: categoryWithSub[],
+    isMobile: boolean | undefined,
+    handleClose: () => void,
+    brands: brands
 };
 
 interface IRPMenuRight {
-    allCategories: categoryWithSub[],
     selectedCategory: categoryWithSub,
     handleClose: () => void,
-    brands: ReturnType<typeof selectBrands>
+    brands: brands
 };
 
 interface IRPCategoriesList {
@@ -40,50 +42,91 @@ interface IRPCategoriesList {
     selectedIndex?: number,
     setBrandSelected?: (val: boolean) => void,
     setSelectedIndex?: (index: number) => void,
+    isMobile?: boolean | undefined,
+};
+
+interface IRPBrands {
+    handleClose: () => void,
+    brands: brands
+};
+
+interface IRPCategoryLink {
+    category: categoryWithSub,
+    isMobile?: boolean | undefined,
+    isTopLevel?: boolean,
+    isSubcategory?: boolean | undefined,
+    handleClose?: () => void,
 };
 
 
-const NavigationMenu: React.FC<{ handleClose: () => void }> = ({ handleClose }) => {
+const NavigationMenu: React.FC<{ handleClose: () => void, brands: brands }> = ({ handleClose, brands }) => {
 
     const [brandSelected, setBrandSelected] = React.useState(false);
-    const brands = useSelector(selectBrands);
+    const variables = {
+        up_md: {
+            showRightMenu: true,
+        },
+        down_md: {
+            showRightMenu: false,
+        },
+    };
 
-    const { categoriesTree, topLevelCategories, selectedIndex, setSelectedIndex, selectedCategory } = useCategories();
+    const values = useWindowWidth(variables);
+
+    const { topLevelCategories, selectedIndex, setSelectedIndex, selectedCategory } = useCategories();
 
     return (
         <>
-            <MenuLeft selectedIndex={selectedIndex} brandSelected={brandSelected} setBrandSelected={setBrandSelected} setSelectedIndex={setSelectedIndex} categories={topLevelCategories} />
-            <Divider orientation="vertical" flexItem />
-            <MenuRight allCategories={categoriesTree} selectedCategory={selectedCategory} handleClose={handleClose} brands={brands} />
+            <MenuLeft brands={brands} handleClose={handleClose} isMobile={!values.showRightMenu} selectedIndex={selectedIndex} brandSelected={brandSelected} setBrandSelected={setBrandSelected} setSelectedIndex={setSelectedIndex} categories={topLevelCategories} />
+            {
+                values.showRightMenu &&
+                <>
+                    <Divider orientation="vertical" flexItem />
+                    <MenuRight selectedCategory={selectedCategory} handleClose={handleClose} brands={brands} />
+                </>
+            }
         </>
     );
 };
 
-const MenuLeft: React.FC<IRPMenuLeft> = ({ selectedIndex, brandSelected, setBrandSelected, setSelectedIndex, categories }) => {
+const MenuLeft: React.FC<IRPMenuLeft> = ({ selectedIndex, brandSelected, setBrandSelected, setSelectedIndex, categories, isMobile, brands, handleClose }) => {
     return (
-        <Stack spacing={0} direction="column">
+        <Stack spacing={0} direction="column" sx={{ flex: { xs: 1, md: 'unset' }, width: isMobile ? '100%' : 'unset' }} onClick={(e) => { isMobile && (e.target as HTMLElement).tagName !='A'&& e.stopPropagation() }}>
             <Typography variant='h4' sx={{ fontWeight: 600, color: 'primary.main' }}>Категории</Typography>
-            <CategoriesList categories={categories} isTopLevel={true} selectedIndex={selectedIndex} setBrandSelected={setBrandSelected} setSelectedIndex={setSelectedIndex} />
-            <Stack spacing={2} mt={2} direction="row"
-                sx={{
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    backgroundColor: brandSelected ? 'primary.main' : null,
-                    color: brandSelected ? 'primary.contrastText' : 'primary.main',
-                    '&:hover': { backgroundColor: 'primary.dark' },
-                    p: 2,
-                    ml: -2
-                }}
-                onPointerEnter={() => { setSelectedIndex(-1); setBrandSelected(true) }}
-            >
-                <Typography variant='h4' sx={{ fontWeight: 600 }}>Бренды</Typography>
-                <ChevronRightIcon />
-            </Stack>
+            <CategoriesList isMobile={isMobile} categories={categories} isTopLevel={true} selectedIndex={selectedIndex} setBrandSelected={setBrandSelected} setSelectedIndex={setSelectedIndex} />
+            {
+                isMobile ?
+                    <ResponsiveAccordion title='Бренды' iconColor={'primary.main'} breakpoint={'md'} accordeonSX={{ width: '100%', mt: 2 }} accordionDetailsSX={{ p: 1, boxShadow: 1, borderRadius: 1 }} titleSX={{ p: 2, pl: 0, fontWeight: 600, color: 'primary.main', fontSize: '1.5rem', textTransform: 'none' }}>
+                        <Brands brands={brands} handleClose={handleClose} />
+                    </ResponsiveAccordion>
+                    :
+                    <Stack
+                        spacing={2}
+                        mt={2}
+                        direction="row"
+                        sx={{
+                            justifyContent: 'space-between',
+                            cursor: 'pointer',
+                            backgroundColor: brandSelected ? 'primary.main' : null,
+                            color: brandSelected ? 'primary.contrastText' : 'primary.main',
+                            '&:hover': { backgroundColor: 'primary.dark' },
+                            p: 2,
+                            ml: -2
+                        }}
+                        onPointerEnter={() => { setSelectedIndex(-1); setBrandSelected(true) }}
+                        component={Link} 
+                        href={'/brands'}
+                        className={'woUnderline'}
+                    >
+                        <Typography variant='h4' sx={{ fontWeight: 600 }}>Бренды</Typography>
+                        <ChevronRightIcon sx={{ transform: { xs: 'rotate(90deg)', md: 'none' } }} />
+                    </Stack>
+            }
         </Stack>
     )
 }
 
-const MenuRight: React.FC<IRPMenuRight> = ({ allCategories, selectedCategory, handleClose, brands }) => {
+const MenuRight: React.FC<IRPMenuRight> = ({ selectedCategory, handleClose, brands }) => {
     return (
         <Stack spacing={2} direction="column" sx={{ ml: 7, alignItems: 'flex-start' }}>
             <Typography variant='h2' sx={{ mb: 3, color: 'primary.main' }}>{selectedCategory?.__text || 'Бренды:'}</Typography>
@@ -93,101 +136,133 @@ const MenuRight: React.FC<IRPMenuRight> = ({ allCategories, selectedCategory, ha
                         <CategoriesList categories={selectedCategory.subcategories} handleClose={handleClose} />
                         : <Button variant="outlined" href={selectedCategory.breadcrumps![selectedCategory.breadcrumps!.length - 1].link}>К товарам</Button>
                     :
-                    <MenuList sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                        {
-                            brands.map(brand =>
-                                <MenuItem
-                                    key={brand.text}
-                                    onClick={handleClose}
-                                    sx={{
-                                        p: 0,
-                                        '&:hover': {
-                                            backgroundColor: 'transparent',
-                                        }
-                                    }}>
-                                    <RouterChip
-                                        label={brand.text}
-                                        href={brand.breadcrumps![brand.breadcrumps!.length - 1].link}
-                                    />
-                                </MenuItem>
-                            )
-
-                        }
-                    </MenuList>
+                    <Brands brands={brands} handleClose={handleClose} />
             }
         </Stack>
     )
 }
 
-const CategoriesList: React.FC<IRPCategoriesList> = ({ categories, handleClose, isTopLevel, selectedIndex, setBrandSelected, setSelectedIndex }) => {
+const CategoriesList: React.FC<IRPCategoriesList> = ({ categories, handleClose, isTopLevel, selectedIndex, setBrandSelected, setSelectedIndex, isMobile }) => {
     return (
-        <MenuList sx={isTopLevel ? { pl: 3 } : { display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+        <MenuList sx={isTopLevel ? { pl: isMobile ? 2 : 3 } : { display: 'flex', gap: 3, flexWrap: 'wrap' }}>
             {
                 categories.map((category, index) =>
                     <MenuItem
                         key={category._id as unknown as string}
-                        onClick={handleClose ? handleClose : undefined}
-                        selected={selectedIndex != undefined ? index === selectedIndex : undefined}
-                        onPointerEnter={(setSelectedIndex && setBrandSelected) ? () => { setSelectedIndex(index); setBrandSelected(false) } : undefined}
+                        onClick={handleClose && !isMobile ? handleClose : undefined}
+                        selected={selectedIndex != undefined && !isMobile ? index === selectedIndex : undefined}
+                        onPointerEnter={(setSelectedIndex && setBrandSelected && !isMobile) ? () => { setSelectedIndex(index); setBrandSelected(false) } : undefined}
                         sx={{
                             flex: isTopLevel ? undefined : '0 1 30%',
                             order: isTopLevel ? undefined : category.subcategories ? 1 : 2,
                             p: 0,
+                            pt: isMobile ? 2 : null,
                             flexDirection: isTopLevel ? undefined : 'column',
                             alignItems: isTopLevel ? undefined : 'flex-start',
+                            display: isMobile ? 'box' : 'flex',
+                            whiteSpace: isMobile ? 'normal' : 'nowrap',
                             '&:hover': { backgroundColor: 'transparent' },
                             '&.Mui-selected': isTopLevel ? { backgroundColor: 'primary.main', color: 'primary.contrastText' } : undefined,
                             '&.Mui-selected:hover': isTopLevel ? { backgroundColor: 'primary.dark' } : undefined,
                         }}>
-                        <Link
-                            href={category.breadcrumps![category.breadcrumps!.length - 1].link}
-                            sx={{
-                                fontWeight: 600,
-                                fontSize: isTopLevel ? null : '18px',
-                                flex: isTopLevel ? 1 : null,
-                                p: isTopLevel ? 1 : null,
-                                display: isTopLevel ? 'flex' : null,
-                                justifyContent: isTopLevel ? 'space-between' : null,
-                                gap: isTopLevel ? 2 : null,
-                                '&:hover': isTopLevel ? { opacity: 1 } : null,
-                            }}
-                            role={isTopLevel ? 'directory' : 'link'}
-                        >
-                            {category.__text}
-                            {isTopLevel && <ChevronRightIcon />}
-                        </Link>
                         {
-                            category.subcategories && !isTopLevel ?
-                                <MenuList>
-                                    {category.subcategories.map(category =>
-                                        <ListItem
-                                            key={category._id as unknown as string}
-                                            sx={{
-                                                p: 0,
-                                            }}>
-                                            <Link
-                                                href={category.breadcrumps![category.breadcrumps!.length - 1].link}
-                                                sx={{
-                                                    p: '3px',
-                                                    pl: 0,
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    gap: 1,
-                                                }}
-                                            >
-                                                {category.__text}
-                                            </Link>
-
-                                        </ListItem>
-                                    )}
-                                </MenuList>
-                                : null
+                            isMobile && category.subcategories ?
+                                    <ResponsiveAccordion title={category.__text} iconColor={'text.primary'} titleSX={{ color: 'inherit', fontWeight: 600, fontSize: '12px', }} breakpoint={'md'} accordeonSX={{ width: '100%', boxShadow: 1, p: 1, borderRadius: 1 }}>
+                                                <>
+                                                    <Button
+                                                        variant={'outlined'}
+                                                        href={category.breadcrumps![category.breadcrumps!.length - 1].link}
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                            '&:hover': { opacity: 1 },
+                                                            fontSize: 'inherit',
+                                                            textTransform: 'none',
+                                                            display: 'flex',
+                                                            ml: 1
+                                                        }}
+                                                    >
+                                                        Все товары
+                                                    </Button>
+                                                    <CategoriesList isMobile={isMobile} categories={category.subcategories} isTopLevel={true} selectedIndex={selectedIndex} setBrandSelected={setBrandSelected} setSelectedIndex={setSelectedIndex} />
+                                                </>
+                                    </ResponsiveAccordion>
+                                :
+                                <>
+                                    <CategoryLink category={category} isMobile={isMobile} isTopLevel={isTopLevel} handleClose={handleClose} />
+                                    {
+                                        category.subcategories && !isTopLevel ?
+                                            <MenuList>
+                                                {category.subcategories.map(category =>
+                                                    <ListItem
+                                                        key={category._id as unknown as string}
+                                                        sx={{
+                                                            p: 0,
+                                                        }}>
+                                                        <CategoryLink category={category} isMobile={isMobile} isTopLevel={isTopLevel} isSubcategory={true} handleClose={handleClose} />
+                                                    </ListItem>
+                                                )}
+                                            </MenuList>
+                                            : null
+                                    }
+                                </>
                         }
+                    </MenuItem>
+                )
+            }
+        </MenuList >
+    )
+}
+
+const Brands: React.FC<IRPBrands> = ({ handleClose, brands }) => {
+    return (
+        <MenuList sx={{ display: 'flex', gap: { xs: 1, md: 3 }, flexWrap: 'wrap' }}>
+            {
+                brands.map(brand =>
+                    <MenuItem
+                        key={brand.text}
+                        onClick={handleClose}
+                        sx={{
+                            p: 0,
+                            '&:hover': {
+                                backgroundColor: 'transparent',
+                            },
+                        }}>
+                        <RouterChip
+                            label={brand.text}
+                            href={brand.breadcrumps![brand.breadcrumps!.length - 1].link}
+                            sx={{ fontSize: { xs: '10px', md: '12px' } }}
+                        />
                     </MenuItem>
                 )
             }
         </MenuList>
     )
-}
+};
+
+const CategoryLink: React.FC<IRPCategoryLink> = ({ category, isMobile, isTopLevel, isSubcategory, handleClose }) => {
+    return (
+        <Link
+            href={category.breadcrumps![category.breadcrumps!.length - 1].link}
+            sx={{
+                fontWeight: isSubcategory ? 400 : 600,
+                fontSize: isTopLevel ? (isMobile ? '12px' : null) : (isSubcategory ? null : '18px'),
+                wordBreak: isMobile ? 'break-all' : null,
+                flex: isTopLevel ? 1 : null,
+                p: isTopLevel ? 1 : '3px',
+                pl: isTopLevel ? null : 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: isTopLevel ? 2 : 1,
+                '&:hover': isTopLevel ? { opacity: 1 } : null,
+            }}
+            onClick={handleClose}
+            className={isTopLevel ? 'woUnderline' : ''}
+        >
+            {category.__text}
+            {isTopLevel && <ChevronRightIcon />}
+        </Link>
+    )
+};
 
 export default NavigationMenu;
