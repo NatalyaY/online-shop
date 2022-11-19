@@ -5,6 +5,7 @@ import { selectUser, SignUp, Login, logOut } from '../features/user/userSlice';
 import { selectFavorits } from '../features/favorits/favoritsSlice';
 import { selectCart } from '../features/cart/cartSlice';
 import { selectBrands } from '../features/brands/brandsSlice';
+import { selectProducts } from './../features/products/productsSlice';
 
 import { useAppDispatch } from '../common/generics';
 import Product from '../../server/db/models/product';
@@ -16,6 +17,7 @@ export type user = ReturnType<typeof selectUser>;
 export type favorits = ReturnType<typeof selectFavorits>;
 export type cart = ReturnType<typeof selectCart>;
 export type brands = ReturnType<typeof selectBrands>;
+export type Products = ReturnType<typeof selectProducts>;
 
 
 type LoginParams = Parameters<typeof Login>[number];
@@ -25,7 +27,7 @@ export type Login = ({ phone, password }: LoginParams) => void;
 export type SignUp = ({ phone, password }: SignUpParams) => void;
 export type LogOut = () => void;
 
-export type GetAutocompleteProducts = (s: string) => Promise<Product[] | null>;
+export type GetAutocompleteProducts = (s: string) => Promise<Products | null>;
 
 
 
@@ -43,7 +45,7 @@ const Header_container = () => {
 
 
     const GetAutocompleteProducts: GetAutocompleteProducts = async (s) => {
-        const products: Product[] = await (await fetch(`/api/products/autocomplete?s=${s}`)).json();
+        const products: Products = await (await fetch(`/api/products/autocomplete?s=${s}`)).json();
         return products.length ? products : null;
     };
 

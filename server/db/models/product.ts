@@ -1,5 +1,4 @@
 import { ObjectId } from "mongodb";
-import { type breadcrump } from '../../helpers';
 
 export default class Product {
     constructor(
@@ -20,6 +19,5 @@ export default class Product {
         public box_width?: string,
         public box_size?: string,
         public description?: string,
-        public breadcrumps?: breadcrump[]
         ) { }
 }

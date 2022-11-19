@@ -209,7 +209,7 @@ const Carousel = () => {
                     <Stack direction={'row'} gap={12 / 8} sx={{ position: 'absolute', bottom: `${dotsVerticalGap + testimonialsOverlap}px`, left: '50%', transform: 'translateX(-50%)' }}>
                         {
                             bannersContent.map((_, i) =>
-                                <Dot isActive={i == index} key={i} onClick={() => handleDot(i)} dotsHeight={dotsHeight} />
+                                <Dot isActive={i == index} key={i} onClick={() => handleDot ? handleDot(i) : {}} dotsHeight={dotsHeight} />
                             )
                         }
                     </Stack>

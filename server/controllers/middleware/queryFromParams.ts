@@ -20,7 +20,7 @@ const searchParams = {
     sorting: 'sorting',
 };
 
-const getCategoriesIds = async (id: Category['UUID']) => {
+export const getCategoriesIds = async (id: Category['UUID']) => {
     const categories = await collections.categories.find().toArray();
     const getIds = (cat: categoryWithSub) => {
         ids.push(cat.UUID);

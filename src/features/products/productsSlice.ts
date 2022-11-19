@@ -2,20 +2,24 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
 import Product from '../../../server/db/models/product';
 import { error } from '../../common/generics';
+import { breadcrump } from './../../../server/helpers';
+
+type ProductWithBreadcrumps = Product & { breadcrumps: breadcrump[] };
 
 type productsState = {
     qty?: number,
     status?: "iddle" | "loading" | "succeeded" | "failed",
     error?: string
-    products: Product[]
+    products: ProductWithBreadcrumps[]
 };
 
-const initialState: Partial<productsState> = {
-    status: "iddle"
+const initialState: productsState = {
+    status: "iddle",
+    products: []
 }
 
 export const fetchAllProducts = createAsyncThunk<
-    { products: Product[] },
+    { products: ProductWithBreadcrumps[] },
     undefined,
     {
         rejectValue: { message: error['message'] }
@@ -35,7 +39,7 @@ export const fetchAllProducts = createAsyncThunk<
 });
 
 export const fetchSomeProducts = createAsyncThunk<
-    {products: Product[], qty: number},
+    { products: ProductWithBreadcrumps[], qty: number},
     undefined,
     {
         rejectValue: { message: error['message'] }
@@ -55,7 +59,7 @@ export const fetchSomeProducts = createAsyncThunk<
 });
 
 export const fetchOneProduct = createAsyncThunk<
-    Product,
+    ProductWithBreadcrumps,
     string,
     {
         rejectValue: { message: error['message'] }
@@ -103,9 +107,8 @@ const productsSlice = createSlice({
 
 
 export default productsSlice.reducer;
-export const selectProducts = (state: AppState) => {
+export const selectProducts = (state: AppState, filters: AppState['filters'] = state.filters) => {
     const products = state.products.products;
-    const filters = state.filters;
     const categories = state.categories;
 
     if (Object.keys(filters).length == 0) {
@@ -128,6 +131,7 @@ export const selectProducts = (state: AppState) => {
         })
     };
 };
+
 export const selectProductByID = (state: AppState, id: string) => {
     const products = state.products.products;
     return products ? products.find(product => product._id as unknown as string == id) || null : null;

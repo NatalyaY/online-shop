@@ -7,6 +7,12 @@ const ObjectId = require('mongodb').ObjectId;
 import Category from "../../db/models/category";
 import Product from "../../db/models/product";
 
+import { CategoryWithBreadcrumps, CategoryWithProductsQty } from '../../helpers';
+import { ProductWithBreadcrumps } from '../../helpers';
+
+import { getCategoriesIds } from './queryFromParams';
+
+
 function translit(word: string) {
     const converter = {
         'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
@@ -36,7 +42,7 @@ function translit(word: string) {
 }
 
 function createCategoryBreadCrumps(categories: Category[]) {
-    return categories?.map(cat => {
+    return categories.map(cat => {
         let breadcrumps: breadcrump[] = [{ textRU: 'Главная', textEN: '/', link: '/' }];
         let categoriesPath: Partial<breadcrump>[] = [];
         grabParentCatNames(cat);
@@ -63,14 +69,14 @@ function createCategoryBreadCrumps(categories: Category[]) {
             return breadcrump;
         });
         breadcrumps.push(...(categoriesPath as breadcrump[]));
-        cat.breadcrumps = breadcrumps;
-        return cat;
+        (cat as CategoryWithBreadcrumps).breadcrumps = breadcrumps;
+        return cat as CategoryWithBreadcrumps;
     });
 };
 
-function createProductBreadCrumps(products: Product[], categories: Category[]): Product[] {
-    return products?.map((prod, i) => {
-        const category = categories?.find(category => category.UUID === prod.categoryId);
+function createProductBreadCrumps(products: Product[], categories: CategoryWithBreadcrumps[]) {
+    return products.map((prod, i) => {
+        const category = categories.find(category => category.UUID === prod.categoryId);
         if (category && category.breadcrumps) {
             const breadcrump = {
                 textRU: prod.name,
@@ -81,9 +87,9 @@ function createProductBreadCrumps(products: Product[], categories: Category[]): 
                 }, '') + `prod-${prod._id}-${translit(prod.name)}`
             };
             const breadcrumps = [...category.breadcrumps, breadcrump];
-            prod.breadcrumps = breadcrumps;
+            (prod as ProductWithBreadcrumps).breadcrumps = breadcrumps;
         };
-        return prod;
+        return prod as ProductWithBreadcrumps;
     });
 };
 
@@ -99,6 +105,13 @@ function createBrandBreadCrumps(brands: string[]) {
         }
     });
 };
+
+const fetchProductsQtyByCategory = async (category: CategoryWithBreadcrumps) => {
+    const ids = await getCategoriesIds(category.UUID);
+    (category as CategoryWithProductsQty).productsQty = await collections.products.countDocuments({ categoryId: { $in: ids } });
+
+    return category as CategoryWithProductsQty
+}
 
 interface params {
     limit?: number | false,
@@ -183,11 +196,12 @@ export default function fetchFromDB({ limit = 100, coll = 'all', autocomplete = 
             return acc;
         }, {} as Record<string, any>);
 
-        Promise.all(Object.values(promises).flat()).then(res => {
+        Promise.all(Object.values(promises).flat()).then( async (res) => {
             promises.products = createProductBreadCrumps(promises.products, promises.categories).map((product) => {
                 product.description = product.description?.replace(/<br \/>/g, '\n');
                 return product;
             });
+            promises.categories = await Promise.all(promises.categories.map(fetchProductsQtyByCategory));
             if (promises.products_autocomplete) {
                 promises.products_autocomplete = createProductBreadCrumps(promises.products_autocomplete, promises.categories).map((product) => {
                     product.description = product.description?.replace(/<br \/>/g, '\n');
