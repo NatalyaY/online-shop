@@ -107,6 +107,7 @@ const productsSlice = createSlice({
 
 
 export default productsSlice.reducer;
+
 export const selectProducts = (state: AppState, filters: AppState['filters'] = state.filters) => {
     const products = state.products.products;
     const categories = state.categories;
@@ -135,4 +136,19 @@ export const selectProducts = (state: AppState, filters: AppState['filters'] = s
 export const selectProductByID = (state: AppState, id: string) => {
     const products = state.products.products;
     return products ? products.find(product => product._id as unknown as string == id) || null : null;
+};
+
+export const selectAllProducts = (state: AppState) => {
+    return state.products.qty ? null : state.products.products;
+};
+
+export const selectAllProductsWithSort = (state: AppState, sort: 'new'| 'popular'| 'price_desc'| 'price_asc') => {
+    if (state.products.qty) return null;
+    const sortingFns: { [k in typeof sort]: (a: ProductWithBreadcrumps, b: ProductWithBreadcrumps) => number} = {
+        new: (a, b) => a.creationDate - b.creationDate,
+        popular: (a, b) => a.popularity - b.popularity,
+        price_desc: (a, b) => (a.salePrice || a.price) > (b.salePrice || b.price) ? 1 : -1,
+        price_asc: (a, b) => (a.salePrice || a.price) > (b.salePrice || b.price) ? -1 : 1,
+    }
+    return [...state.products.products].sort(sortingFns[sort]);
 };

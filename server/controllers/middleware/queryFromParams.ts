@@ -9,6 +9,19 @@ export type categoryWithSub = Category & {
     subcategories?: categoryWithSub[];
 };
 
+type price = number;
+
+type params = {
+    category?: string,
+    brand?: string,
+    price?: `${price};${price}`,
+    availability?: boolean,
+    p?: number,
+    onpage?: number,
+    sorting?: string,
+    s?: string,
+};
+
 const searchParams = {
     category: 'categoryId',
     brand: 'brand',
@@ -20,8 +33,8 @@ const searchParams = {
     sorting: 'sorting',
 };
 
-export const getCategoriesIds = async (id: Category['UUID']) => {
-    const categories = await collections.categories.find().toArray();
+export const getCategoriesIds = async (id: Category['UUID'], categoriesList: Category[] | null = null) => {
+    const categories = categoriesList || await collections.categories.find().toArray();
     const getIds = (cat: categoryWithSub) => {
         ids.push(cat.UUID);
         if (cat.subcategories) {
@@ -35,11 +48,148 @@ export const getCategoriesIds = async (id: Category['UUID']) => {
         getIds(category);
     };
     return ids;
-}
+};
 
+export const getQuery = async (params: params, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    let categoryIds: string[];
 
+    if (params.category) {
+        categoryIds = await getCategoriesIds(params.category);
+    };
 
-export async function getQueryFromSearchParams(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (params.s) {
+        const autocomplete =
+            [
+                {
+                    $search: {
+
+                        compound: {
+                            should: [
+                                {
+                                    autocomplete: {
+                                        query: params.s,
+                                        path: 'name',
+                                    },
+                                },
+                                {
+                                    autocomplete: {
+                                        query: params.s,
+                                        path: 'description',
+                                    },
+                                },
+                                {
+                                    autocomplete: {
+                                        query: params.s,
+                                        path: 'brand',
+                                    },
+                                }
+                            ],
+                            must: [
+                                {
+                                    range: {
+                                        path: "amount",
+                                        "gt": 0,
+                                    },
+                                }
+                            ]
+                        },
+                    },
+                },
+                { $limit: 5 },
+            ];
+        const fullresults =
+            [
+                {
+                    $search: {
+                        compound: {
+                            should: [
+                                {
+                                    autocomplete: {
+                                        query: params.s,
+                                        path: 'name',
+                                    },
+                                },
+                                {
+                                    autocomplete: {
+                                        query: params.s,
+                                        path: 'description',
+                                    },
+                                },
+                                {
+                                    autocomplete: {
+                                        query: params.s,
+                                        path: 'brand',
+                                    },
+                                }
+                            ],
+                        },
+                    },
+                },
+            ];
+        const ResultsQty =
+            [
+                {
+                    $search: {
+                        compound: {
+                            should: [
+                                {
+                                    autocomplete: {
+                                        query: params.s,
+                                        path: 'name',
+                                    },
+                                },
+                                {
+                                    autocomplete: {
+                                        query: params.s,
+                                        path: 'description',
+                                    },
+                                },
+                                {
+                                    autocomplete: {
+                                        query: params.s,
+                                        path: 'brand',
+                                    },
+                                }
+                            ],
+                        },
+                    },
+                },
+                {
+                    $count: "searchResults"
+                }
+            ];
+        (req as RequestCustom).searchQueries = { autocomplete, fullresults, ResultsQty };
+    } else {
+        const query = Object.keys(params).reduce((acc, cur) => {
+            try {
+                const key = cur as keyof typeof searchParams;
+                const productProp = searchParams[key];
+                if (productProp) {
+                    let value = params[cur as keyof typeof params];
+                    if (('' + value).split(';').length == 2 && cur == 'price') {
+                        acc[productProp] = { $gt: +('' + value).split(';')[0], $lt: +('' + value).split(';')[1] };
+                    } else if (cur == 'availability') {
+                        if (params[cur]) {
+                            acc[productProp] = { $gt: 0 };
+                        };
+                    } else if (cur == 'category') {
+                        acc[productProp] = { $in: categoryIds }
+                    } else {
+                        acc[productProp] = params[cur as keyof typeof params] as keyof typeof params;
+                    };
+                };
+                return acc;
+            } catch (error) {
+                console.log(error);
+                return acc;
+            };
+        }, {} as RequestCustom["queryBD"]);
+        (req as RequestCustom).queryBD = query;
+    };
+    next();
+};
+
+export default async function getQueryFromSearchParams(req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const PROD_REG = /prod-(?<product>([^\/]+?))-(.*)\/?/i;
         const CAT_REG = /cat-(?<category>([^\/]+?))-(.*)\/?/i;
@@ -62,146 +212,147 @@ export async function getQueryFromSearchParams(req: express.Request, res: expres
         const category = path.match(CAT_REG)?.groups?.category || req.query.category;
         const brand = path.match(BRAND_REG)?.groups?.brand || req.query.brand;
 
-        let categoryIds: string[];
+        // let categoryIds: string[];
 
         if (category) {
             search.category = category;
-            categoryIds = await getCategoriesIds(category as string);
+            // categoryIds = await getCategoriesIds(category as string);
         };
         if (brand) search.brand = brand;
+        await getQuery(search, req, res, next);
 
-        if (search.s) {
-            const autocomplete =
-                [
-                    {
-                        $search: {
+        // if (search.s) {
+        //     const autocomplete =
+        //         [
+        //             {
+        //                 $search: {
 
-                            compound: {
-                                should: [
-                                    {
-                                        autocomplete: {
-                                            query: search.s,
-                                            path: 'name',
-                                        },
-                                    },
-                                    {
-                                        autocomplete: {
-                                            query: search.s,
-                                            path: 'description',
-                                        },
-                                    },
-                                    {
-                                        autocomplete: {
-                                            query: search.s,
-                                            path: 'brand',
-                                        },
-                                    }
-                                ],
-                                must: [
-                                    {
-                                        range: {
-                                            path: "amount",
-                                            "gt": 0,
-                                        },
-                                    }
-                                ]
-                            },
-                        },
-                    },
-                    { $limit: 5 },
-                ];
-            const fullresults =
-                [
-                    {
-                        $search: {
-                            compound: {
-                                should: [
-                                    {
-                                        autocomplete: {
-                                            query: search.s,
-                                            path: 'name',
-                                        },
-                                    },
-                                    {
-                                        autocomplete: {
-                                            query: search.s,
-                                            path: 'description',
-                                        },
-                                    },
-                                    {
-                                        autocomplete: {
-                                            query: search.s,
-                                            path: 'brand',
-                                        },
-                                    }
-                                ],
-                            },
-                        },
-                    },
-                ];
-            const ResultsQty =
-                [
-                    {
-                        $search: {
-                            compound: {
-                                should: [
-                                    {
-                                        autocomplete: {
-                                            query: search.s,
-                                            path: 'name',
-                                        },
-                                    },
-                                    {
-                                        autocomplete: {
-                                            query: search.s,
-                                            path: 'description',
-                                        },
-                                    },
-                                    {
-                                        autocomplete: {
-                                            query: search.s,
-                                            path: 'brand',
-                                        },
-                                    }
-                                ],
-                            },
-                        },
-                    },
-                    {
-                        $count: "searchResults"
-                    }
-                ];
-            (req as RequestCustom).searchQueries = { autocomplete, fullresults, ResultsQty };
-        } else {
-            const query = Object.keys(search).reduce((acc, cur) => {
-                try {
-                    const key = cur as keyof typeof searchParams;
-                    const productProp = searchParams[key];
-                    if (productProp) {
-                        let value = search[cur];
-                        if (('' + value).split(';').length == 2 && cur == 'price') {
-                            acc[productProp] = { $gt: +('' + value).split(';')[0], $lt: +('' + value).split(';')[1] };
-                        } else if (cur == 'availability') {
-                            if (search[cur]) {
-                                acc[productProp] = { $gt: 0 };
-                            };
-                        } else if (cur == 'category') {
-                            acc[productProp] = { $in: categoryIds }
-                        } else {
-                            acc[productProp] = search[cur] as keyof typeof search;
-                        };
-                    };
-                    return acc;
-                } catch (error) {
-                    console.log(error);
-                    return acc;
-                };
-            }, {} as RequestCustom["queryBD"]);
-            (req as RequestCustom).queryBD = query;
-        };
-        next();
+        //                     compound: {
+        //                         should: [
+        //                             {
+        //                                 autocomplete: {
+        //                                     query: search.s,
+        //                                     path: 'name',
+        //                                 },
+        //                             },
+        //                             {
+        //                                 autocomplete: {
+        //                                     query: search.s,
+        //                                     path: 'description',
+        //                                 },
+        //                             },
+        //                             {
+        //                                 autocomplete: {
+        //                                     query: search.s,
+        //                                     path: 'brand',
+        //                                 },
+        //                             }
+        //                         ],
+        //                         must: [
+        //                             {
+        //                                 range: {
+        //                                     path: "amount",
+        //                                     "gt": 0,
+        //                                 },
+        //                             }
+        //                         ]
+        //                     },
+        //                 },
+        //             },
+        //             { $limit: 5 },
+        //         ];
+        //     const fullresults =
+        //         [
+        //             {
+        //                 $search: {
+        //                     compound: {
+        //                         should: [
+        //                             {
+        //                                 autocomplete: {
+        //                                     query: search.s,
+        //                                     path: 'name',
+        //                                 },
+        //                             },
+        //                             {
+        //                                 autocomplete: {
+        //                                     query: search.s,
+        //                                     path: 'description',
+        //                                 },
+        //                             },
+        //                             {
+        //                                 autocomplete: {
+        //                                     query: search.s,
+        //                                     path: 'brand',
+        //                                 },
+        //                             }
+        //                         ],
+        //                     },
+        //                 },
+        //             },
+        //         ];
+        //     const ResultsQty =
+        //         [
+        //             {
+        //                 $search: {
+        //                     compound: {
+        //                         should: [
+        //                             {
+        //                                 autocomplete: {
+        //                                     query: search.s,
+        //                                     path: 'name',
+        //                                 },
+        //                             },
+        //                             {
+        //                                 autocomplete: {
+        //                                     query: search.s,
+        //                                     path: 'description',
+        //                                 },
+        //                             },
+        //                             {
+        //                                 autocomplete: {
+        //                                     query: search.s,
+        //                                     path: 'brand',
+        //                                 },
+        //                             }
+        //                         ],
+        //                     },
+        //                 },
+        //             },
+        //             {
+        //                 $count: "searchResults"
+        //             }
+        //         ];
+        //     (req as RequestCustom).searchQueries = { autocomplete, fullresults, ResultsQty };
+        // } else {
+        //     const query = Object.keys(search).reduce((acc, cur) => {
+        //         try {
+        //             const key = cur as keyof typeof searchParams;
+        //             const productProp = searchParams[key];
+        //             if (productProp) {
+        //                 let value = search[cur];
+        //                 if (('' + value).split(';').length == 2 && cur == 'price') {
+        //                     acc[productProp] = { $gt: +('' + value).split(';')[0], $lt: +('' + value).split(';')[1] };
+        //                 } else if (cur == 'availability') {
+        //                     if (search[cur]) {
+        //                         acc[productProp] = { $gt: 0 };
+        //                     };
+        //                 } else if (cur == 'category') {
+        //                     acc[productProp] = { $in: categoryIds }
+        //                 } else {
+        //                     acc[productProp] = search[cur] as keyof typeof search;
+        //                 };
+        //             };
+        //             return acc;
+        //         } catch (error) {
+        //             console.log(error);
+        //             return acc;
+        //         };
+        //     }, {} as RequestCustom["queryBD"]);
+        //     (req as RequestCustom).queryBD = query;
+        // };
+        // next();
     } catch (error) {
         console.log(req.url);
         console.log(error);
     }
-}
+};

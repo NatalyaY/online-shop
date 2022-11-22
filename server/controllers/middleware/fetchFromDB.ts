@@ -106,10 +106,9 @@ function createBrandBreadCrumps(brands: string[]) {
     });
 };
 
-const fetchProductsQtyByCategory = async (category: CategoryWithBreadcrumps) => {
-    const ids = await getCategoriesIds(category.UUID);
+const fetchProductsQtyByCategory = async (category: CategoryWithBreadcrumps, categories: CategoryWithBreadcrumps[]) => {
+    const ids = await getCategoriesIds(category.UUID, categories);
     (category as CategoryWithProductsQty).productsQty = await collections.products.countDocuments({ categoryId: { $in: ids } });
-
     return category as CategoryWithProductsQty
 }
 
@@ -142,6 +141,9 @@ export default function fetchFromDB({ limit = 100, coll = 'all', autocomplete = 
                     break;
                 case 'price_asc':
                     sort = { price: -1, _id: 1 }
+                    break;
+                default:
+                    sort = { popularity: 1, _id: 1 }
                     break;
             };
         };
@@ -196,12 +198,12 @@ export default function fetchFromDB({ limit = 100, coll = 'all', autocomplete = 
             return acc;
         }, {} as Record<string, any>);
 
-        Promise.all(Object.values(promises).flat()).then( async (res) => {
+        Promise.all(Object.values(promises).flat()).then(async (res) => {
             promises.products = createProductBreadCrumps(promises.products, promises.categories).map((product) => {
                 product.description = product.description?.replace(/<br \/>/g, '\n');
                 return product;
             });
-            promises.categories = await Promise.all(promises.categories.map(fetchProductsQtyByCategory));
+            promises.categories = await Promise.all((promises.categories as CategoryWithBreadcrumps[]).map(cat => fetchProductsQtyByCategory(cat, promises.categories)));
             if (promises.products_autocomplete) {
                 promises.products_autocomplete = createProductBreadCrumps(promises.products_autocomplete, promises.categories).map((product) => {
                     product.description = product.description?.replace(/<br \/>/g, '\n');

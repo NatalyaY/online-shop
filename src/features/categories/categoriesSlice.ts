@@ -2,8 +2,9 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
 import Category from '../../../server/db/models/category';
 import { breadcrump } from './../../../server/helpers';
+import { CategoryWithProductsQty } from '../../../server/helpers';
 
-type categoriesState = (Category & { breadcrumps: breadcrump[] })[];
+type categoriesState = CategoryWithProductsQty[];
 
 const initialState: categoriesState = []
 

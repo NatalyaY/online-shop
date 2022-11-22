@@ -7,17 +7,16 @@ import {
     Typography,
     Stack,
     Button,
+    Chip
 } from '@mui/material';
-import Product from './../../../server/db/models/product';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
-import { CSSProperties } from '@mui/styled-engine';
 import { products } from '../../containers/FeaturedProducts_container';
 
 type product = NonNullable<products>[number]
 
 
-const ProductListCard: React.FC<{ product: product, id?: string, sx?: CSSProperties }> = ({ product, sx, id }) => {
+const ProductListCard: React.FC<{ product: product }> = ({ product }) => {
 
     const iconStyles = {
         cursor: 'pointer',
@@ -51,29 +50,44 @@ const ProductListCard: React.FC<{ product: product, id?: string, sx?: CSSPropert
     const salePrice = product.salePrice || product.price;
 
     return (
-        <Card elevation={0} id={id} sx={{ borderRadius: '10px', flex: '1 1 0', minWidth: '280px', '&:hover': {boxShadow: 1}, ...sx }} component={'article'}>
+        <Card elevation={0} sx={{ borderRadius: '10px', flex: '1 1 0', minWidth: '280px', '&:hover': { boxShadow: 1 }, opacity: product.amount > 0 ? '1' : '0.5' }} component={'article'}>
             <CardActionArea href={product.breadcrumps![product.breadcrumps!.length - 1].link} sx={{ p: 2, height: '100%', borderRadius: 'inherit', '&:hover .MuiCardActionArea-focusHighlight': { opacity: 0 } }}>
-                <CardMedia image={product.image[0]} sx={{ borderRadius: 'inherit', aspectRatio: '1', width: '100%', p: 20 / 8, backgroundSize: 'contain' }}>
-                    <FavoriteBorderRoundedIcon sx={{ ...iconStyles, ml: 'auto' }} />
+                <CardMedia image={product.image[0]} sx={{ borderRadius: 'inherit', aspectRatio: '1', width: '100%', p: 20 / 8, backgroundSize: 'contain', display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'space-between' }}>
+                    <Stack direction={'row'} gap={2} justifyContent={'space-between'}>
+                        {product.popularity >= 100 &&
+                            <Chip label='Хит продаж' sx={{ width: 'fit-content', backgroundColor: '#F5813F', color: 'white' }} />
+                        }
+                        {product.creationDate >= new Date(new Date().setDate(new Date().getDate() - 14)).setHours(0, 0, 0, 0) &&
+                            <Chip label='Новинка' sx={{ width: 'fit-content' }} color={'info'}/>
+                        }
+                        <FavoriteBorderRoundedIcon sx={{ ...iconStyles, ml: 'auto' }} />
+                    </Stack>
                 </CardMedia>
                 <CardContent sx={{ px: 0 }}>
                     <Stack direction={'column'} gap={2} justifyContent={'space-between'}>
                         <Stack sx={{ minWidth: 0 }}>
-                            <Typography variant='h5' component={'span'} sx={{ fontWeight: 600, display: 'flex', gap: 1, mb: 2 }}>
-                                {`${salePrice} ₽`}
-                                {product.salePrice &&
-                                    <Typography sx={{ textDecoration: 'line-through', color: 'text.disabled', fontSize: '14px', fontWeight: 400, verticalAlign: 'top' }}>{`${product.price}  ₽`}</Typography>
+                            <Stack gap={2} direction={'row'} alignItems={'center'} justifyContent={'space-between'} sx={{ mb: 2 }}>
+                                <Typography variant='h5' component={'span'} sx={{ fontWeight: 600, display: 'flex', gap: 1 }}>
+                                    {`${salePrice} ₽`}
+                                    {product.salePrice &&
+                                        <Typography sx={{ textDecoration: 'line-through', color: 'text.disabled', fontSize: '14px', fontWeight: 400, verticalAlign: 'top' }}>{`${product.price}  ₽`}</Typography>
+                                    }
+                                </Typography>
+                                {product.discount &&
+                                    <Chip label={`-${product.discount}%`} sx={{ width: 'fit-content', backgroundColor: '#dc416d', color: 'white' }} />
                                 }
-                            </Typography>
+                            </Stack>
                             <Typography variant='body1' sx={prodNameStyles}>{product.name}</Typography>
                         </Stack>
-                        <Button variant="outlined" startIcon={<ShoppingCartOutlinedIcon />} sx={{ py: 1 }}>
-                            В корзину
-                        </Button>
-                        {/* <ShoppingCartOutlinedIcon sx={iconStyles} /> */}
+                        {product.amount > 0 ?
+                            <Button variant="outlined" startIcon={<ShoppingCartOutlinedIcon />} sx={{ py: 1 }}>
+                                В корзину
+                            </Button>
+                            :
+                            <Typography variant='body1'>Нет в наличии</Typography>
+                        }
                     </Stack>
                 </CardContent>
-                {/* <FavoriteBorderRoundedIcon sx={{...iconStyles, position: 'absolute', right: '20px', top: '20px'}} /> */}
             </CardActionArea>
         </Card>
     )

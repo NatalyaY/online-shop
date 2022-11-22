@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import useCarousel from '../hooks/useCarousel';
 
 import {
-    MenuList,
+    MenuList, SxProps,
 } from '@mui/material';
 import { CSSProperties } from '@mui/styled-engine';
 
-type children = React.ReactElement<HTMLElement & { sx: CSSProperties } & React.DOMAttributes<HTMLElement>>[];
+type children = React.ReactElement<HTMLElement & { sx: CSSProperties } & { index?: number, isActive?: boolean } & React.DOMAttributes<HTMLElement>>[];
 
 type InitializerProps = {
     time: number,
@@ -16,46 +16,27 @@ type InitializerProps = {
     dots: boolean,
     itemsQty: number,
     infinite?: boolean,
+    setActiveToChild?: boolean
 }
 
 type MultipleCarouselProps = {
     children: children,
-    sx?: CSSProperties,
+    sx?: SxProps,
     settings: {
         time: number,
         index: number
         infinite: boolean,
         setIndex: (index: number) => void,
+        setActiveToChild?: boolean
     },
 }
 
 
 export const MultipleCarousel: React.FC<MultipleCarouselProps> = ({ children, sx, settings }) => {
-    const { time, index, infinite, setIndex } = settings;
-    const [pointerEvents, setPointerEvents] = useState<CSSProperties['pointerEvents']>('all');
+    const { time, index, infinite, setIndex, setActiveToChild } = settings;
     const ref = React.useRef<HTMLUListElement>(null);
-    const [childrenWithProps, setChildrenWithProps] = useState<typeof children | null>(null);
     const [dontAddChild, setDontAddChild] = useState<boolean>(false);
     const [prevIndex, setprevIndex] = useState<number>(index);
-
-
-    const getChildrenWithProps = () => {
-        return React.Children.map(children, (child, i) => {
-            if (React.isValidElement(child)) {
-                return React.cloneElement(child,
-                    {
-                        id: `${i}`,
-                        sx: { ...child.props.sx, pointerEvents: pointerEvents },
-                    }
-                );
-            };
-            return child;
-        })
-    };
-
-    if (!childrenWithProps) {
-        setChildrenWithProps(getChildrenWithProps())
-    };
 
     let pageX = 0;
 
@@ -93,6 +74,9 @@ export const MultipleCarousel: React.FC<MultipleCarouselProps> = ({ children, sx
 
     const galleryScroll: EventListener = (e) => {
         if (!ref.current) return;
+        ref.current.style.pointerEvents = 'none';
+        setActiveToChild && [...ref.current.children].forEach(ch => (ch as HTMLElement).classList.add('active'));
+
         if (pageX !== 0) {
             const scroll = ref.current.scrollLeft + (pageX - (e as MouseEvent).pageX);
 
@@ -105,14 +89,14 @@ export const MultipleCarousel: React.FC<MultipleCarouselProps> = ({ children, sx
             };
         };
         pageX = (e as MouseEvent).pageX;
-        setPointerEvents('none');
     };
 
-    const pointerUp = () => {
+    const pointerUp: EventListener = (e) => {
         if (!ref.current) return;
+        ref.current.style.pointerEvents = 'all';
+        setActiveToChild && [...ref.current.children].forEach(ch => (ch as HTMLElement).classList.remove('active'));
 
         pageX = 0;
-        setPointerEvents('all');
         setIndexToScrolledElement();
         document.removeEventListener('pointermove', galleryScroll);
         document.removeEventListener('pointerup', pointerUp);
@@ -171,9 +155,10 @@ export const MultipleCarousel: React.FC<MultipleCarouselProps> = ({ children, sx
         };
     };
 
-    useEffect(() => {
-        setChildrenWithProps(getChildrenWithProps());
-    }, [pointerEvents]);
+    useEffect(()=>{
+        if (!ref.current) return;
+        [...ref.current.children].forEach((ch, i) => ch.id = ""+i)
+    }, [])
 
     useEffect(() => {
         if (!children || !ref.current || ref.current.children.length == 0) return;
@@ -185,6 +170,9 @@ export const MultipleCarousel: React.FC<MultipleCarouselProps> = ({ children, sx
     return (
         <MenuList
             sx={{
+                transition: `all ${time}ms`,
+                gap: { xs: 1, md: 3 },
+                ...sx,
                 display: 'flex',
                 overflow: 'scroll hidden',
                 userSelect: 'none',
@@ -195,15 +183,12 @@ export const MultipleCarousel: React.FC<MultipleCarouselProps> = ({ children, sx
                     width: 0,
                     height: 0,
                 },
-                ...sx,
-                gap: { xs: 1, md: 3 },
-                transition: `all ${time}ms`,
             }}
             ref={ref}
             onDragStart={() => false}
             onPointerDown={() => pointerDown()}
         >
-            {childrenWithProps}
+            {children}
         </MenuList>
     )
 };
@@ -226,7 +211,8 @@ export default function getCarousel(parameters: InitializerProps) {
             time: parameters.time,
             index: settings.index,
             infinite: parameters.infinite == undefined ? true : parameters.infinite,
-            setIndex: settings.setIndex
+            setIndex: settings.setIndex,
+            setActiveToChild: parameters.setActiveToChild
         }
     };
 };

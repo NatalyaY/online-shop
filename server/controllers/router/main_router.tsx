@@ -3,7 +3,7 @@ import path from 'path';
 import * as fs from 'node:fs/promises';
 
 import { RequestCustom } from '../../helpers';
-import { getQueryFromSearchParams } from './../middleware/queryFromParams';
+import getQueryFromSearchParams from './../middleware/queryFromParams';
 import fetchFromDB from './../middleware/fetchFromDB';
 
 
