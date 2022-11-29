@@ -36,9 +36,13 @@ app.ws('/watch', (ws, req) => {
         { $match: { 'fullDocument._id': user._id } }
     ];
     const ordersWatchCursor = collections.orders.watch(pipeline, { fullDocument: "updateLookup" });
+    const cartsWatchCursor = collections.carts.watch(pipeline, { fullDocument: "updateLookup" });
+    const favoritsWatchCursor = collections.favorites.watch(pipeline, { fullDocument: "updateLookup" });
 
-    [categoriesWatchCursor, productsWatchCursor, ordersWatchCursor].forEach(cursor => {
+
+    [categoriesWatchCursor, productsWatchCursor, ordersWatchCursor, favoritsWatchCursor, cartsWatchCursor].forEach(cursor => {
         cursor.on('change', (change) => {
+            console.log(change);
             ws.send(JSON.stringify(change));
         });
     });

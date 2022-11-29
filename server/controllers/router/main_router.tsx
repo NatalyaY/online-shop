@@ -36,26 +36,32 @@ router.use((req, res, next) => {
 router.use(getQueryFromSearchParams, fetchFromDB());
 
 router.get('/*', async (req, res) => {
-    const data = (req as RequestCustom).fetchedData;
+    const { products, productsQty, favorites, cart, ...data } = (req as RequestCustom).fetchedData;
+    const currentUser = (req as RequestCustom).currentUser;
+    const { _id, cart:c, unauthorizedId, orders, favorites:f, password, ...user } = currentUser;
+
     try {
-        data.products = {
-            products: data.products,
-            qty: data.productsQty,
-            status: 'iddle'
+        const state = {
+            ...data,
+            favorits: { ...{items: favorites?.items}, status: 'iddle', lastUpdatedId: '' },
+            cart: { ...{ items: cart?.items }, status: 'iddle', lastUpdatedId: '' },
+            user: {...user, status: 'iddle'},
+            products: {
+                products,
+                qty: productsQty,
+                status: 'iddle'
+            }
         };
-        delete data.productsQty;
-        data.user = (req as RequestCustom).currentUser;
 
-        const store = configureAppStore(data);
+        const store = configureAppStore(state);
 
-        const normalizedState = JSON.stringify(data).replace(
+        const normalizedState = JSON.stringify(state).replace(
             /</g,
             '\\u003c'
         );
 
         const cache = createEmotionCache();
-        const { extractCriticalToChunks, constructStyleTagsFromChunks } =
-            createEmotionServer(cache);
+        const { extractCriticalToChunks, constructStyleTagsFromChunks } = createEmotionServer(cache);
 
         const html = renderToString(
             <CacheProvider value={cache}>

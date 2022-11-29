@@ -1,88 +1,68 @@
-export interface button {
-    text: string,
-    link?: string,
-    backgroundColor?: string,
-    color?: string
+import { SerializedError } from '@reduxjs/toolkit';
+import User from './../../server/db/models/user';
+import {
+    CategoryInState,
+    ProductInState,
+    BrandInState,
+    FavoriteMapped,
+    CartMapped,
+    OrderMapped,
+    UserMapped
+} from '../../server/helpers';
+
+export type GetAllOptionalTypes<Type> = {
+    [Property in keyof Type]?: Type[Property]
 };
 
-export interface imageLabel {
-    main: string,
-    before?: string,
-    after?: string,
-    backgroundColor?: string,
-    color?: string
+export interface error {
+    status: number,
+    message: string
+};
+export interface withItems<item> {
+    lastUpdatedId?: item | ''
+};
+export interface DBStatus {
+    status: "iddle" | "loading" | "succeeded" | "failed"
+    error?: error['message'] | SerializedError['message'] | null
 };
 
-interface image {
-    src: string,
-    label?: imageLabel,
-    margin?: number,
+export type cartState = GetAllOptionalTypes<CartMapped> & DBStatus & withItems<CartMapped['items'][number]>;
+
+export type categoriesState = CategoryInState[];
+
+export type brandsState = BrandInState[];
+
+export type favoritesState = GetAllOptionalTypes<FavoriteMapped> & DBStatus & withItems<FavoriteMapped["items"][number]>;
+
+export interface filtersState {
+    minPrice?: number,
+    maxPrice?: number,
+    availiability?: boolean,
+    category?: string,
+    brand?: string,
+    s?: string,
+    sort?: 'new' | 'popular' | 'price_desc' | 'price_asc'
 };
 
-interface mediaImage extends image {
-    position: 'media'
+export interface ordersState extends withItems<OrderMapped["_id"]> {
+    orders?: OrderMapped[]
 };
 
-interface normalImage extends image {
-    position: 'left' | 'right' | 'center' | 'top' | 'bottom'
+export type userState = UserMapped & DBStatus;
+
+export interface productsState extends DBStatus {
+    qty?: number,
+    products: ProductInState[]
 };
 
-interface text {
-    title: string,
-    position: 'left' | 'right' | 'center' | 'top' | 'bottom',
-    caption?: string,
-    color?: string,
-}
-
-interface normalText extends text { };
-
-interface bannerMediaImageText extends text {
-    backgroundColor?: string,
+export interface newOrder {
+    items: OrderMapped['items'],
+    contacts: OrderMapped['contacts']
 };
 
-interface BannerCommon {
-    text: normalText | bannerMediaImageText,
-    link: string,
-    buttons?: button[] | [button, button, ...button[]],
-    images?: [normalImage, normalImage, ...normalImage[]] | [normalImage] | [mediaImage],
-    backgroundColor?: string,
-};
+export { OrderMapped };
 
-interface BannerWOImage extends BannerCommon {
-    text: normalText
-};
-
-interface BannerSingleImage extends BannerCommon {
-    images: [normalImage],
-    text: normalText
-};
-
-export interface BannerMediaImage extends BannerCommon {
-    images: [mediaImage],
-    text: bannerMediaImageText
-};
-
-interface BannerMultyImages extends BannerCommon {
-    images: [normalImage, normalImage, ...normalImage[]],
-    text: normalText
-};
-
-type Item = BannerWOImage | BannerSingleImage | BannerMediaImage | BannerMultyImages;
-export type MulipleItem = Item & { order: number, orderMobile: number };
-export type Banner = [Item] | [MulipleItem, MulipleItem, ...MulipleItem[]];
-export type BannerItem = Item | MulipleItem;
-
-export type images = NonNullable<BannerItem['images']>;
-export type imagePositionWOMedia = normalImage['position'];
-
-export const isBannerWOImage = (item: any): item is BannerWOImage => {
-    return item.images === undefined
-};
-
-export const isBannerWithMediaImage = (item: any): item is BannerMediaImage => {
-    return item.images && item.images.length == 1 && item.images[0].position == 'media'
-};
-
-export const isBannerWithMultyItems = (item: any): item is MulipleItem => {
-    return (item.order && item.orderMobile && true) || (Array.isArray(item) && item[0].order && item[0].orderMobile && item.length !== 1)
+export type UserLoginFields = {
+    phone: User['phone'],
+    password: User['password'],
 };

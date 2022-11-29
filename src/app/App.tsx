@@ -1,16 +1,13 @@
 import React, { useEffect } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { fetchAllProducts } from '../features/products/productsSlice';
-import { useAppDispatch, useAppSelector } from '../common/generics';
-import getSocket from '../common/client_socket';
+
+import getSocket from '../common/helpers/client_socket';
 import useAllProducts from '../common/hooks/useAllProducts';
 
-
-import ClassDefault from '../components/ClassDefault';
-import Home from '../components/Home';
-import Header from '../containers/Header_container';
-import Footer from '../containers/Footer_container';
-import Error from '../components/Error';
+import Home from '../components/Home/Home';
+import Header from '../containers/Header/Header_container';
+import Footer from '../containers/Footer/Footer_container';
+import Error from '../components/Error/Error';
 
 
 
@@ -28,8 +25,7 @@ const App = () => {
       <main>
         <Routes>
           <Route path='*' element={<Error />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/brands/*" element={<ClassDefault />} />
+          <Route path="/" index={true} element={<Home />} />
           <Route path="/search/?:search" element={<Error />} />
         </Routes>
       </main>

@@ -10,10 +10,18 @@ type OneOrMoreProperties<Union extends string, Value> = {
 
 type Params<T> = OneOrMoreProperties<`${compare}_${breakpoint}`, { [K in keyof T[keyof T]]: T[keyof T][keyof T[keyof T]] }>;
 
+function useDebouncedFunction(func: Function, delay: number) {
+    const [timerId, setTimerId] = React.useState<NodeJS.Timeout | null>(null);
+
+    return () => {
+        timerId && clearTimeout(timerId);
+        setTimerId(setTimeout(() => func(...arguments), delay));
+    };
+}
 
 export function useWindowWidth<T extends Params<T>>(variables: T) {
     const theme = useTheme();
-    const [results, setResults] = React.useState<{ [K in keyof T[keyof T]]?: T[keyof T][keyof T[keyof T]] }>({});
+    const [results, setResults] = React.useState<{ [K in keyof T[keyof T]]?: T[keyof T][K] extends () => void ? ReturnType<T[keyof T][K]> : T[keyof T][K] }>({});
 
     const onResize = () => {
         let res: typeof results = {};
@@ -24,17 +32,23 @@ export function useWindowWidth<T extends Params<T>>(variables: T) {
                 window.innerWidth <= theme.breakpoints.values[breakpoint]
                 : window.innerWidth > theme.breakpoints.values[breakpoint];
             if (condition) {
-                res = (variables[k] as unknown as typeof results);
+                const result = Object.fromEntries(Object.entries(variables[k]!).map(entry => {
+                    const [key, value] = entry;
+                    return [key, typeof value == 'function' ? value() : value];
+                }))
+                res = (result as unknown as typeof results);
             };
         });
         setResults(res);
     };
 
+    const debouncedOnResize = useDebouncedFunction(onResize, 100);
+
     React.useEffect(() => {
         onResize();
-        window.addEventListener("resize", onResize);
+        window.addEventListener("resize", debouncedOnResize);
         return () => {
-            window.removeEventListener('resize', onResize)
+            window.removeEventListener('resize', debouncedOnResize)
         };
     }, []);
 

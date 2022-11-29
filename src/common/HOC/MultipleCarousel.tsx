@@ -158,7 +158,7 @@ export const MultipleCarousel: React.FC<MultipleCarouselProps> = ({ children, sx
     useEffect(()=>{
         if (!ref.current) return;
         [...ref.current.children].forEach((ch, i) => ch.id = ""+i)
-    }, [])
+    }, [children])
 
     useEffect(() => {
         if (!children || !ref.current || ref.current.children.length == 0) return;

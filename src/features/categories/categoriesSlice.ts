@@ -1,18 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
-import Category from '../../../server/db/models/category';
-import { breadcrump } from './../../../server/helpers';
-import { CategoryWithProductsQty } from '../../../server/helpers';
-
-type categoriesState = CategoryWithProductsQty[];
+import { categoriesState } from '../../common/types';
 
 const initialState: categoriesState = []
 
 const categoriesSlice = createSlice({
     name: 'categories',
     initialState,
-    reducers: {
-    }
+    reducers: {}
 });
 
 export default categoriesSlice.reducer
