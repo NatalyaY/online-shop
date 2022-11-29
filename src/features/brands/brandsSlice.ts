@@ -1,14 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
-
-type brandsState = {
-    text?: string,
-    breadcrumps?: {
-        textRU: string,
-        textEN: string
-        link: string
-    }[]
-}[];
+import { brandsState } from '../../common/types';
 
 const initialState: brandsState = []
 

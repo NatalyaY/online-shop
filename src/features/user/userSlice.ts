@@ -1,25 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
-import User from '../../../server/db/models/user';
-import { CreateAddRemoveReducers, error } from '../../common/generics';
-
-
-type GetAllOptionalTypes<Type> = {
-    [Property in keyof Type]?: Type[Property]
-};
-
-type LoginFields = {
-    phone: User['phone'],
-    password: User['password'],
-}
-
-type userState = GetAllOptionalTypes<User> & {
-    status: "iddle" | "loading" | "succeeded" | "failed",
-    error?: string
-};
+import { CreateAddRemoveReducers } from '../generics';
+import { UserLoginFields, userState, error } from '../../common/types';
 
 const initialState: userState = {
-    status: "iddle"
+    status: "iddle",
+    state: 'unauthorized'
 };
 
 const { extraReducers, addThunk, removeThunk } = CreateAddRemoveReducers(initialState, 'user');
@@ -27,9 +13,9 @@ export { addThunk as addUserFields, removeThunk as removeUserFields };
 
 export const Login = createAsyncThunk<
     userState,
-    LoginFields,
+    UserLoginFields,
     {
-        rejectValue: { message: error['message'], item: LoginFields }
+        rejectValue: { message: error['message'], item: UserLoginFields }
     }
 >('user/LoginInDB', async (item, { rejectWithValue }) => {
     try {
@@ -53,9 +39,9 @@ export const Login = createAsyncThunk<
 
 export const SignUp = createAsyncThunk<
     userState,
-    LoginFields,
+    UserLoginFields,
     {
-        rejectValue: { message: error['message'], item: LoginFields }
+        rejectValue: { message: error['message'], item: UserLoginFields }
     }
 >('user/createUserInDB', async (item, { rejectWithValue }) => {
     try {

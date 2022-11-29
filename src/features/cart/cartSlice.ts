@@ -1,21 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
-import Cart from '../../../server/db/models/cart';
-import { CreateAddRemoveReducers } from '../../common/generics';
-
-
-type GetAllOptionalTypes<Type> = {
-    [Property in keyof Type]?: Type[Property]
-};
-
-type cartState = GetAllOptionalTypes<Cart> & {
-    status: "iddle" | "loading" | "succeeded" | "failed",
-    error?: string,
-    lastUpdatedId?: Cart["items"][number]
-};
+import { CreateAddRemoveReducers } from '../generics';
+import { cartState } from '../../common/types';
 
 const initialState: cartState = {
-    status: "iddle"
+    status: "iddle",
+    lastUpdatedId: '',
 };
 
 const { addThunk, removeThunk, extraReducers } = CreateAddRemoveReducers(initialState, 'carts');
@@ -25,8 +15,7 @@ export { addThunk as addToCart, removeThunk as removeFromCart }
 const cartSlice = createSlice({
     name: 'cart',
     initialState,
-    reducers: {
-    },
+    reducers: {},
     extraReducers: (builder) => extraReducers(builder)
 });
 

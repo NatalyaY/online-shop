@@ -1,24 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
-import Order from '../../../server/db/models/order';
-import { error } from '../../common/generics';
-
-
-interface ordersState {
-    lastUpdatedId?: Order["_id"],
-    orders?: Order[]
-};
-
-interface newOrder {
-    items: Order['items'],
-    contacts: Order['contacts']
-};
-
-const initialState: ordersState = {
-};
+import { error, ordersState, newOrder, OrderMapped } from '../../common/types';
+const initialState: ordersState = {};
 
 export const CreateOrder = createAsyncThunk<
-    Order,
+    OrderMapped,
     newOrder,
     {
         rejectValue: { message: error['message'] }
@@ -47,15 +33,16 @@ export const CreateOrder = createAsyncThunk<
 const ordersSlice = createSlice({
     name: 'orders',
     initialState,
-    reducers: {
-    },
+    reducers: {},
     extraReducers: (builder) => {
         builder
             .addCase(CreateOrder.fulfilled, (state, action) => {
                 if (state.orders) {
                     state.orders.push(action.payload);
+                    state.lastUpdatedId = action.payload._id;
                 } else {
-                    state.orders = [action.payload]
+                    state.orders = [action.payload];
+                    state.lastUpdatedId = action.payload._id;
                 };
             })
     }

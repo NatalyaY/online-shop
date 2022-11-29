@@ -58,32 +58,7 @@ router.get('/autocomplete', getQueryFromSearchParams, fetchFromDB({ coll: ['prod
     };
 });
 
-router.get('/prod-:product', getQueryFromSearchParams, fetchFromDB({ limit: 1, coll: ['products'] }), async (req, res) => {
-    try {
-        const data = (req as RequestCustom).fetchedData;
-        res
-            .status(200)
-            .json(data.products[0] || {});
-    } catch (error) {
-        const message = error instanceof Error || createError.isHttpError(error) ? error.message : error;
-        const status = createError.isHttpError(error) ? error.statusCode : 500;
-        res
-            .status(200)
-            .json({ error: { message: message, status } });
-    };
-});
-
-router.post('/custom', async (req, res, next) => {
-    try {
-        await getQuery(req.body, req, res, next);
-    } catch (error) {
-        const message = error instanceof Error || createError.isHttpError(error) ? error.message : error;
-        const status = createError.isHttpError(error) ? error.statusCode : 500;
-        res
-            .status(200)
-            .json({ error: { message: message, status } });
-    };
-}, fetchFromDB({ coll: ['products'] }),  async (req, res) => {
+router.post('/custom', (req, res, next) => getQuery(req.body, req, next), fetchFromDB({ coll: ['products'] }), async (req, res) => {
     try {
         const data = (req as RequestCustom).fetchedData;
         const result = {

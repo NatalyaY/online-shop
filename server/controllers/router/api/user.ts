@@ -16,10 +16,17 @@ router.post('/login', async (req, res, next) => {
     };
     try {
         const { user, token } = await login((req as RequestCustom).currentUser, phone, password);
-        setAuthCookie(res, token);
-        res
-            .status(200)
-            .json(user);
+        if (user) {
+            const { _id, cart, unauthorizedId, orders, favorites, password, ...rest } = user;
+            setAuthCookie(res, token);
+            res
+                .status(200)
+                .json(rest);
+        } else {
+            res
+                .status(200)
+                .json({ error: { message: 'Internal error', status: 500 } });
+        }
     } catch (error) {
         const message = error instanceof Error || createError.isHttpError(error) ? error.message : error;
         const status = createError.isHttpError(error) ? error.statusCode : 500;
@@ -36,10 +43,17 @@ router.post('/signUp', async (req, res) => {
     };
     try {
         const { user, token } = await signUp((req as RequestCustom).currentUser, phone, password);
-        setAuthCookie(res, token);
-        res
-            .status(200)
-            .json(user);
+        if (user) {
+            const { _id, cart, unauthorizedId, orders, favorites, password, ...rest } = user;
+            setAuthCookie(res, token);
+            res
+                .status(200)
+                .json(rest);
+        } else {
+            res
+                .status(200)
+                .json({ error: { message: 'Internal error', status: 500 } });
+        }
     } catch (error) {
         const message = error instanceof Error || createError.isHttpError(error) ? error.message : error;
         const status = createError.isHttpError(error) ? error.statusCode : 500;
@@ -51,9 +65,10 @@ router.post('/signUp', async (req, res) => {
 
 router.get('/logout', logout, (req, res) => {
     const currentUser = (req as RequestCustom).currentUser;
+    const { _id, cart, unauthorizedId, orders, favorites, password, ...rest } = currentUser;
     res
         .status(200)
-        .json(currentUser);
+        .json(rest);
 });
 
 router.post('/', async (req, res) => {

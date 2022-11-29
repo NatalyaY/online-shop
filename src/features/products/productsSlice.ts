@@ -1,17 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { params } from '../../../server/helpers';
 import type { AppState } from '../../app/store';
-import Product from '../../../server/db/models/product';
-import { error } from '../../common/generics';
-import { breadcrump } from './../../../server/helpers';
-
-type ProductWithBreadcrumps = Product & { breadcrumps: breadcrump[] };
-
-type productsState = {
-    qty?: number,
-    status?: "iddle" | "loading" | "succeeded" | "failed",
-    error?: string
-    products: ProductWithBreadcrumps[]
-};
+import { error, productsState } from '../../common/types';
 
 const initialState: productsState = {
     status: "iddle",
@@ -19,12 +9,12 @@ const initialState: productsState = {
 }
 
 export const fetchAllProducts = createAsyncThunk<
-    { products: ProductWithBreadcrumps[] },
+    { products: productsState['products'] },
     undefined,
     {
         rejectValue: { message: error['message'] }
     }
-    >('products/fetchAllProducts', async (undefined, { rejectWithValue }) => {
+>('products/fetchAllProducts', async (undefined, { rejectWithValue }) => {
     try {
         const response = await fetch("/api/products/all");
         const responseData = await response.json();
@@ -39,12 +29,12 @@ export const fetchAllProducts = createAsyncThunk<
 });
 
 export const fetchSomeProducts = createAsyncThunk<
-    { products: ProductWithBreadcrumps[], qty: number},
+    { products: productsState['products'], qty: number },
     undefined,
     {
         rejectValue: { message: error['message'] }
     }
-    >('products/fetchSomeProducts', async (undefined, { rejectWithValue }) => {
+>('products/fetchSomeProducts', async (undefined, { rejectWithValue }) => {
     try {
         const response = await fetch('/api/products');
         const responseData = await response.json();
@@ -58,15 +48,47 @@ export const fetchSomeProducts = createAsyncThunk<
     };
 });
 
-export const fetchOneProduct = createAsyncThunk<
-    ProductWithBreadcrumps,
-    string,
+export const fetchProductsByIDs = createAsyncThunk<
+    { products: productsState['products'], qty: number },
+    string[],
     {
         rejectValue: { message: error['message'] }
     }
-    >('products/fetchOneProduct', async (id, { rejectWithValue }) => {
+>('products/fetchProductsByIDs', async (ids, { rejectWithValue }) => {
     try {
-        const response = await fetch(`/api/products/prod-${id}-`);
+        const response = await fetch('/api/products/custom', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify({ _id: ids })
+        });
+        const responseData = await response.json();
+        if (responseData.error) {
+            return rejectWithValue({ message: (responseData.error as error).message })
+        } else {
+            return responseData;
+        };
+    } catch (err) {
+        return rejectWithValue({ message: (err as error).message })
+    };
+});
+
+export const fetchCustomProducts = createAsyncThunk<
+    { products: productsState['products'], qty: number },
+    params,
+    {
+        rejectValue: { message: error['message'] }
+    }
+    >('products/fetchCustomProducts', async (params, { rejectWithValue }) => {
+    try {
+        const response = await fetch('/api/products/custom', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify(params)
+        });
         const responseData = await response.json();
         if (responseData.error) {
             return rejectWithValue({ message: (responseData.error as error).message })
@@ -96,11 +118,17 @@ const productsSlice = createSlice({
                 state.status = 'loading';
             })
             .addCase(fetchSomeProducts.fulfilled, (state, action) => {
-                state.products ? state.products.push(...action.payload.products) : state.products = action.payload.products;
+                const products = new Set([...state.products, ...action.payload.products]);
+                state.products = [...products];
                 state.qty = action.payload.qty;
             })
-            .addCase(fetchOneProduct.fulfilled, (state, action) => {
-                state.products ? state.products.push(action.payload) : state.products = [action.payload];
+            .addCase(fetchProductsByIDs.fulfilled, (state, action) => {
+                const products = new Set([...state.products, ...action.payload.products]);
+                state.products = [...products];
+            })
+            .addCase(fetchCustomProducts.fulfilled, (state, action) => {
+                const products = new Set([...state.products, ...action.payload.products]);
+                state.products = [...products];
             })
     }
 });
@@ -108,14 +136,15 @@ const productsSlice = createSlice({
 
 export default productsSlice.reducer;
 
-export const selectProducts = (state: AppState, filters: AppState['filters'] = state.filters) => {
+export const selectProducts = (state: AppState, filters: AppState['filters'] = state.filters, getAllProducts: boolean = false) => {
     const products = state.products.products;
     const categories = state.categories;
 
     if (Object.keys(filters).length == 0) {
         return products;
     } else {
-        return !products ? [] : products.filter((product) => {
+        if (products.length == 0 || (getAllProducts && state.products.qty != undefined)) return [];
+        const filteredProducts = products.filter((product) => {
             const productCategory = categories.find(cat => cat.UUID == product.categoryId);
             if (filters.s) {
                 return product.name.includes(filters.s)
@@ -129,26 +158,26 @@ export const selectProducts = (state: AppState, filters: AppState['filters'] = s
             const isInCategory = filters.category ? product.categoryId == filters.category || (productCategory?._parentId == filters.category) : true;
             const isInBrand = filters.brand ? product.brand == filters.brand : true;
             return isInMinPrice && isInMaxPrice && isInCategory && isInAvailiability && isInBrand;
-        })
+        });
+        return filters.sort ? sortProducts(filteredProducts, filters.sort) : filteredProducts;
     };
 };
 
-export const selectProductByID = (state: AppState, id: string) => {
+export const selectProductsByIDs = (state: AppState, ids: string[]) => {
     const products = state.products.products;
-    return products ? products.find(product => product._id as unknown as string == id) || null : null;
+    return ids.map(id => products.find(prod => prod._id === id));
 };
 
 export const selectAllProducts = (state: AppState) => {
     return state.products.qty ? null : state.products.products;
 };
 
-export const selectAllProductsWithSort = (state: AppState, sort: 'new'| 'popular'| 'price_desc'| 'price_asc') => {
-    if (state.products.qty) return null;
-    const sortingFns: { [k in typeof sort]: (a: ProductWithBreadcrumps, b: ProductWithBreadcrumps) => number} = {
-        new: (a, b) => a.creationDate - b.creationDate,
-        popular: (a, b) => a.popularity - b.popularity,
+const sortProducts = (products: AppState['products']['products'], sort: 'new' | 'popular' | 'price_desc' | 'price_asc') => {
+    const sortingFns: { [k in typeof sort]: (a: typeof products[number], b: typeof products[number]) => number } = {
+        new: (a, b) => b.creationDate - a.creationDate,
+        popular: (a, b) => b.popularity - a.popularity,
         price_desc: (a, b) => (a.salePrice || a.price) > (b.salePrice || b.price) ? 1 : -1,
         price_asc: (a, b) => (a.salePrice || a.price) > (b.salePrice || b.price) ? -1 : 1,
-    }
-    return [...state.products.products].sort(sortingFns[sort]);
+    };
+    return products.sort(sortingFns[sort]);
 };
