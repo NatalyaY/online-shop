@@ -3,8 +3,7 @@ import express from 'express';
 import { collections } from '../../db/services/db.service';
 import Product from './../../db/models/product';
 const ObjectId = require('mongodb').ObjectId;
-import Category from './../../db/models/category';
-import { MapDbObject } from '../../db/typeMapper';
+import { translitBrand } from './../../../src/common/helpers/translitBrand';
 
 import {
     fetchedData,
@@ -15,7 +14,6 @@ import {
     getProductsWithBreadCrumps,
     CategoryInState,
     CategoryWithBreadcrumps,
-    translit,
     RequestCustom,
     CategoryMapped,
     ProductMapped,
@@ -39,8 +37,8 @@ export default function fetchFromDB({ limit = 100, coll = 'all', autocomplete = 
         let skip: number = 0;
         let sort: { [key: string]: 1 | -1 } = { popularity: -1, _id: 1 };
 
-        if (page && onpage) {
-            skip = (page as number - 1) * (onpage as number);
+        if (page) {
+            skip = (page - 1) * (onpage || 20);
             if (skip < 0) skip = 0;
         };
 
@@ -50,10 +48,10 @@ export default function fetchFromDB({ limit = 100, coll = 'all', autocomplete = 
                     sort = { creationDate: -1, _id: 1 }
                     break;
                 case 'price_desc':
-                    sort = { price: -1, _id: 1 }
+                    sort = { salePrice: -1, _id: 1 }
                     break;
                 case 'price_asc':
-                    sort = { price: 1, _id: 1 }
+                    sort = { salePrice: 1, _id: 1 }
                     break;
                 default:
                     sort = { popularity: -1, _id: 1 }
@@ -63,7 +61,7 @@ export default function fetchFromDB({ limit = 100, coll = 'all', autocomplete = 
 
         if (query.brand) {
             const brands = await collections.products.distinct("brand");
-            const translatedBrands = brands.map(brandName => { return { name: brandName, translated: translit(brandName) } });
+            const translatedBrands = brands.map(brandName => { return { name: brandName, translated: translitBrand(brandName) } });
             if (translatedBrands) {
                 query.brand = translatedBrands.find(brand => brand.translated == query.brand)?.name || '';
             };
@@ -108,6 +106,18 @@ export default function fetchFromDB({ limit = 100, coll = 'all', autocomplete = 
                 } else {
                     products = limit ? await collections.products.find(query).sort(sort).skip(skip).limit(limit).toArray() as unknown as ProductMapped[] : await collections.products.find(query).sort(sort).toArray() as unknown as ProductMapped[];
                 };
+                if (limit) {
+                    const { $or, ...queryWOPrice } = query;
+                    const filter = { ...(search ? search.results : query) };
+                    const filterWOPrice = { ...(search ? search.results : queryWOPrice) };
+
+                    result.productsBrands = await collections.products.distinct('brand', filter);
+                    result.productsCategories = await collections.products.distinct('categoryId', filter);
+                    const prices = await collections.products.distinct('price', { ...filterWOPrice, salePrice: { $exists: false } });
+                    const saleprices = <number[]>(await collections.products.distinct('salePrice', filterWOPrice)).filter(p => p != undefined);
+                    result.minPrice = Math.min(...saleprices, ...prices);
+                    result.maxPrice = Math.max(...saleprices, ...prices);
+                };
                 const withBC = await getProductsWithBreadCrumps(products, categories);
                 result.products = withBC.map(product => {
                     if (product.description) {
@@ -115,6 +125,7 @@ export default function fetchFromDB({ limit = 100, coll = 'all', autocomplete = 
                     };
                     return product;
                 });
+
                 result.productsQty = search ? (await collections.products.aggregate(search.resultsQty).toArray())[0]?.searchResults || 0 : await collections.products.countDocuments(query);
             };
             if (col == 'brands') {

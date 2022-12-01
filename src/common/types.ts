@@ -7,7 +7,8 @@ import {
     FavoriteMapped,
     CartMapped,
     OrderMapped,
-    UserMapped
+    UserMapped,
+    params
 } from '../../server/helpers';
 
 export type GetAllOptionalTypes<Type> = {
@@ -34,15 +35,7 @@ export type brandsState = BrandInState[];
 
 export type favoritesState = GetAllOptionalTypes<FavoriteMapped> & DBStatus & withItems<FavoriteMapped["items"][number]>;
 
-export interface filtersState {
-    minPrice?: number,
-    maxPrice?: number,
-    availiability?: boolean,
-    category?: string,
-    brand?: string,
-    s?: string,
-    sort?: 'new' | 'popular' | 'price_desc' | 'price_asc'
-};
+export type filtersState = Omit<params, '_id' | 's'>;
 
 export interface ordersState extends withItems<OrderMapped["_id"]> {
     orders?: OrderMapped[]
@@ -52,6 +45,7 @@ export type userState = UserMapped & DBStatus;
 
 export interface productsState extends DBStatus {
     qty?: number,
+    queryParams?: { params: params, qty: number, productsBrands: string[], productsCategories: string[], minPrice: number, maxPrice: number }[],
     products: ProductInState[]
 };
 

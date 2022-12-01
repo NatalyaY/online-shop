@@ -12,6 +12,14 @@ router.get('/', getQueryFromSearchParams, fetchFromDB({ coll: ['products'] }), a
         const result = {
             products: data.products,
             qty: data.productsQty,
+            params: {
+                params: (req as RequestCustom).reqParams,
+                qty: data.productsQty,
+                productsBrands: data.productsBrands,
+                productsCategories: data.productsCategories,
+                minPrice: data.minPrice,
+                maxPrice: data.maxPrice
+            },
         };
         res
             .status(200)
@@ -64,6 +72,14 @@ router.post('/custom', (req, res, next) => getQuery(req.body, req, next), fetchF
         const result = {
             products: data.products,
             qty: data.productsQty,
+            params: {
+                params: (req as RequestCustom).reqParams,
+                qty: data.productsQty,
+                productsBrands: data.productsBrands,
+                productsCategories: data.productsCategories,
+                minPrice: data.minPrice,
+                maxPrice: data.maxPrice
+            },
         };
         res
             .status(200)

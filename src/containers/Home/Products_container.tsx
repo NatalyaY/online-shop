@@ -4,12 +4,13 @@ import { useAppSelector, useAppDispatch } from '../../app/redux-hooks';
 import Products from '../../components/Home/components/Products';
 import { selectProducts, fetchCustomProducts } from '../../features/products/productsSlice';
 
-export type products = ReturnType<typeof selectProducts>;
+import { ProductInState } from '../../../server/helpers';
+export type products = ProductInState[];
 
 const Products_container = () => {
     const dispatch = useAppDispatch();
-    const newInProducts = useAppSelector((state) => selectProducts(state, { sort: "new", availiability: true }, true));
-    const popularProducts = useAppSelector((state) => selectProducts(state, { sort: "popular", availiability: true }, true));
+    const { selectedProducts: newInProducts } = useAppSelector((state) => selectProducts(state, { sorting: "new", availability: true }, true, false));
+    const { selectedProducts: popularProducts } = useAppSelector((state) => selectProducts(state, { sorting: "popular", availability: true }, true, false));
 
     React.useEffect(() => {
         if (!newInProducts.length || !popularProducts.length) {

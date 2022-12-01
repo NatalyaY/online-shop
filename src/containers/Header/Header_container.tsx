@@ -6,6 +6,7 @@ import { selectFavorits } from '../../features/favorits/favoritsSlice';
 import { selectCart } from '../../features/cart/cartSlice';
 import { selectBrands } from '../../features/brands/brandsSlice';
 import { selectProducts } from '../../features/products/productsSlice';
+import { ProductInState } from '../../../server/helpers';
 
 import { useAppDispatch } from './../../app/redux-hooks';
 import Header from '../../components/Header/Header';
@@ -14,7 +15,7 @@ export type user = ReturnType<typeof selectUser>;
 export type favorits = ReturnType<typeof selectFavorits>;
 export type cart = ReturnType<typeof selectCart>;
 export type brands = ReturnType<typeof selectBrands>;
-export type Products = ReturnType<typeof selectProducts>;
+export type Products = ProductInState[];
 
 
 type LoginParams = Parameters<typeof Login>[number];

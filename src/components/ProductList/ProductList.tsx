@@ -10,7 +10,9 @@ import { ProductInState } from '../../../server/helpers';
 const ProductList: React.FC<{ products: ProductInState[] | null[] }> = ({products}) => {
     const [isRendered, setIsRendered] = React.useState(false);
 
-    React.useEffect(() => setIsRendered(true), []);
+    React.useEffect(() => {
+        setIsRendered(true);
+    }, []);
 
     return (
         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))` }}>

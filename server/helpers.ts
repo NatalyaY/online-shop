@@ -8,6 +8,7 @@ import Favorite from './db/models/favorite';
 import Cart from './db/models/cart';
 import Order from './db/models/order';
 import { MapDbObject } from './db/typeMapper';
+import { translitBrand } from './../src/common/helpers/translitBrand';
 
 export type fetchedData = {
     categories?: CategoryInState[],
@@ -17,12 +18,16 @@ export type fetchedData = {
     cart?: CartMapped | null,
     orders?: OrderMapped[],
     productsQty?: number,
+    productsBrands?: string[],
+    productsCategories?: string[],
+    minPrice?: number,
+    maxPrice?: number,
 };
 
 export interface query {
     categoryId?: string | { $in: string[] },
     brand?: string,
-    price?: { $gt: number, $lt: number },
+    $or?: [{ salePrice: { $lte: number, $gte: number } }, { price: { $lte: number, $gte: number } }],
     amount?: { $gt: 0 },
     page?: number,
     onpage?: number,
@@ -30,15 +35,15 @@ export interface query {
     _id?: ObjectId | { $in: ObjectId[] }
 }
 
-type price = number;
+type price = string;
 
 export type params = {
     category?: string,
     brand?: string,
     price?: `${price};${price}`,
     availability?: boolean,
-    p?: number,
-    onpage?: number,
+    p?: string,
+    onpage?: string,
     sorting?: 'new' | 'price_desc' | 'price_asc' | 'popular',
     s?: string,
     _id?: string | string[],
@@ -49,6 +54,7 @@ export interface RequestCustom extends express.Request {
     currentUser: User,
     queryBD: { [k in keyof query]: query[k] },
     searchQueries: { results: { [k: string]: any }[], resultsQty: { [k: string]: any }[] },
+    reqParams: params,
     fetchedData: fetchedData
 };
 
@@ -81,8 +87,6 @@ export type UserMapped = Omit<MapDbObject<User>, '_id' | 'cart' | 'unauthorizedI
 export type EditUserMapped = Omit<MapDbObject<User>, '_id' | 'cart' | 'state' | 'unauthorizedId' | 'orders' | 'favorites'>
 
 
-
-
 export type ProductInState = MapDbObject<Awaited<ReturnType<typeof getProductsWithBreadCrumps>>[number]>
 export type BrandInState = ReturnType<typeof getBrandWithBreadCrumps>[number]
 export type CategoryWithBreadcrumps = MapDbObject<NonNullable<Awaited<ReturnType<typeof getCategoryWithBreadcrumps>>>>;
@@ -93,31 +97,6 @@ export type CategoryInState = MapDbObject<CategoryWithBreadcrumpsAndQty & {
     subcategories?: CategoryInState[];
 }>;
 
-export function translit(word: string) {
-    const converter = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
-        'е': 'e', 'ё': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i',
-        'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
-        'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
-        'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'ch',
-        'ш': 'sh', 'щ': 'sch', 'ь': '', 'ы': 'y', 'ъ': '',
-        'э': 'e', 'ю': 'yu', 'я': 'ya'
-    };
-
-    word = word.toLowerCase();
-
-    let answer = [...word].reduce((acc, cur, i) => {
-        const letter = cur as keyof typeof converter;
-        acc += converter[letter] == undefined ? word[i] : converter[letter];
-        return acc;
-    }, '');
-
-    answer = answer.replace(/[^-0-9a-z]/g, '-');
-    answer = answer.replace(/[-]+/g, '-');
-    answer = answer.replace(/^\-|-$/g, '');
-    return answer;
-};
-
 export const getProductsWithBreadCrumps = async (products: ProductMapped[], categories: CategoryWithBreadcrumps[] | null = null) => {
     return await Promise.all(products.map(async (prod) => {
         const category = categories ? categories.find(category => category.UUID === prod.categoryId) : await getCategoryWithBreadcrumps(prod.categoryId);
@@ -125,11 +104,11 @@ export const getProductsWithBreadCrumps = async (products: ProductMapped[], cate
         if (category && category.breadcrumps) {
             const breadcrump = {
                 textRU: prod.name,
-                textEN: translit(prod.name),
+                textEN: translitBrand(prod.name),
                 link: category.breadcrumps.reduce((acc, cur) => {
                     acc += (cur.textEN === '/') ? '/' : `${cur.textEN}/`;
                     return acc;
-                }, '') + `prod-${prod._id}-${translit(prod.name)}`
+                }, '') + `prod-${prod._id}-${translitBrand(prod.name)}`
             };
             breadcrumps = [...category.breadcrumps, breadcrump];
         };
@@ -138,13 +117,13 @@ export const getProductsWithBreadCrumps = async (products: ProductMapped[], cate
 };
 
 export const getBrandWithBreadCrumps = (brands: string[]) => {
-    return brands?.map((brand) => {
+    return brands.map((brand) => {
         return {
             text: brand,
             breadcrumps: [
                 { textRU: 'Главная', textEN: '/', link: '/' },
                 { textRU: 'Бренды', textEN: 'brands', link: '/brands' },
-                { textRU: brand, textEN: translit(brand), link: `/brands/${translit(brand)}` },
+                { textRU: brand, textEN: translitBrand(brand), link: `/brands/${translitBrand(brand)}` },
             ]
         }
     });
@@ -157,7 +136,7 @@ export const getCategoryWithBreadcrumps = async (cat: CategoryMapped | CategoryM
             : await collections.categories.findOne({ UUID: cat })
         : cat;
     if (!category) return null;
-    let breadcrumps: breadcrump[] = [{ textRU: category.__text, textEN: translit(category.__text), link: '' }];
+    let breadcrumps: breadcrump[] = [{ textRU: category.__text, textEN: translitBrand(category.__text), link: '' }];
     let parentCategory = !category._parentId ? null :
         categories ?
             categories.find(c => c.UUID == category._parentId)
@@ -166,7 +145,7 @@ export const getCategoryWithBreadcrumps = async (cat: CategoryMapped | CategoryM
     while (parentCategory) {
         const breadcrump = {
             textRU: parentCategory.__text,
-            textEN: translit(parentCategory.__text),
+            textEN: translitBrand(parentCategory.__text),
             UUID: parentCategory.UUID,
             link: ''
         };
@@ -182,7 +161,7 @@ export const getCategoryWithBreadcrumps = async (cat: CategoryMapped | CategoryM
 
     breadcrumps = breadcrumps.map((breadcrump, i) => {
         if (breadcrump.link == '') {
-            breadcrump.link = breadcrumps.slice(0, i).reduce((acc, cur) => acc += cur.textEN + (cur == breadcrumps[0] ? '' : '/'), '')
+            breadcrump.link = '/categories' + breadcrumps.slice(0, i).reduce((acc, cur) => acc += cur.textEN + (cur == breadcrumps[0] ? '' : '/'), '')
                 + ((i == breadcrumps.length - 1) ? `cat-${category.UUID}-` : '') + breadcrump.textEN;
         };
         return breadcrump;
