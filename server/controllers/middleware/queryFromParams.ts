@@ -6,13 +6,14 @@ const searchParams = {
     category: 'categoryId' as 'categoryId',
     brand: 'brand' as 'brand',
     price: 'price' as 'price',
-    availability: 'amount' as 'amount',
+    inStock: 'amount' as 'amount',
     p: 'page' as 'page',
     onpage: 'onpage' as 'onpage',
     sorting: 'sorting' as 'sorting',
 };
 
 export const getQuery = (params: params, req: express.Request, next: express.NextFunction) => {
+    (req as RequestCustom).reqParams = params;
 
     if (params._id) {
         const query = typeof params._id == 'string' ? { _id: new ObjectId(params._id) } : { _id: { $in: params._id.map(id => new ObjectId(id)) } };
@@ -21,58 +22,210 @@ export const getQuery = (params: params, req: express.Request, next: express.Nex
     };
 
     if (params.s) {
+        const divider = '((\\s+|$|\\.)|(\\:\\s+))';
+        const start = `([A-ZА-Я][а-яa-z]+${divider}(?!\\-))`;
+        const capital = `([A-ZА-Я][A-ZА-Яа-яa-z]*${divider})`;
+        const small = `([a-zа-я][A-zА-я]*${divider})`;
+        const any = `([A-zА-я]+${divider})`;
+        const dashed = `([A-zА-я\\d]+\\s*\\-\\s*[A-zА-я]{2,}${divider})`;
+        const reg = `^(${start}|${dashed})${dashed}*(${capital}${any}*)*(${small}+)*${dashed}*`;
+
         const results =
+            [{
+                $search: {
+                    compound: {
+                        should: [
+                            {
+                                autocomplete: {
+                                    query: params.s,
+                                    path: 'name',
+                                    score: {
+                                        boost: {
+                                            value: 2
+                                        }
+                                    }
+                                },
+                            },
+                            {
+                                text: {
+                                    query: params.s,
+                                    path: 'description',
+                                },
+                            },
+                            {
+                                text: {
+                                    query: params.s,
+                                    path: 'brand',
+                                    score: {
+                                        boost: {
+                                            value: 2
+                                        }
+                                    }
+                                },
+                            }
+                        ],
+                        // mustNot: [
+                        //     {
+                        //         range: {
+                        //             path: "amount",
+                        //             "lt": 1,
+                        //         },
+                        //     }
+                        // ]
+                    },
+                    "highlight": {
+                        "path": 'name'
+                    }
+                },
+            },
+            {
+                "$project": {
+                    name: 1,
+                    price: 1,
+                    salePrice: 1,
+                    image: 1,
+                    sku: 1,
+                    amount: 1,
+                    brand: 1,
+                    categoryId: 1,
+                    creationDate: 1,
+                    popularity: 1,
+                    discount: 1,
+                    _id: 1,
+                    box_height: 1,
+                    box_length: 1,
+                    box_width: 1,
+                    box_size: 1,
+                    description: 1,
+                    "highlights": { "$meta": "searchHighlights" },
+                    score: { $meta: "searchScore" }
+                }
+            }
+            ];
+        const autocompleteHints =
             [
                 {
-                    $search: {
-                        compound: {
-                            should: [
+                    '$search': {
+                        'compound': {
+                            'should': [
                                 {
-                                    autocomplete: {
-                                        query: params.s,
-                                        path: 'name',
-                                    },
-                                },
-                                {
-                                    autocomplete: {
-                                        query: params.s,
-                                        path: 'description',
-                                    },
-                                },
-                                {
-                                    autocomplete: {
-                                        query: params.s,
-                                        path: 'brand',
-                                    },
+                                    'autocomplete': {
+                                        'query': params.s,
+                                        'path': 'name'
+                                    }
                                 }
                             ],
-                            mustNot: [
-                                {
-                                    range: {
-                                        path: "amount",
-                                        "lt": 1,
-                                    },
-                                }
-                            ]
                         },
-                    },
+                        'highlight': {
+                            'path': 'name'
+                        }
+                    }
                 },
-            ];
+                {
+                    '$project': {
+                        'highlights': {
+                            '$first': {
+                                '$meta': 'searchHighlights'
+                            }
+                        }
+                    }
+                },
+                {
+                    '$project': {
+                        'hits': {
+                            '$filter': {
+                                'input': '$highlights.texts',
+                                'cond': {
+                                    '$eq': [
+                                        '$$item.type', 'hit'
+                                    ]
+                                },
+                                'as': 'item'
+                            }
+                        }
+                    }
+                },
+                {
+                    '$project': {
+                        'texts': {
+                            '$first': {
+                                '$map': {
+                                    'input': '$hits',
+                                    'as': 'obj',
+                                    'in': '$$obj.value'
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    '$project': {
+                        'texts': { $regexFind: { input: "$texts", regex: new RegExp(reg) } }
+                    }
+                },
+                {
+                    '$project': {
+                        'texts': '$texts.match'
+                    }
+                },
+                {
+                    '$project': {
+                        'texts': { $replaceAll: { input: "$texts", find: " - ", replacement: " " } }
+                    }
+                },
+                {
+                    '$project': {
+                        'texts': { $replaceAll: { input: "$texts", find: "-", replacement: " " } }
+                    }
+                },
+                {
+                    '$project': {
+                        'texts': { $replaceAll: { input: "$texts", find: ":", replacement: " " } }
+                    }
+                },
+                {
+                    '$project': {
+                        'texts': { $replaceAll: { input: "$texts", find: ".", replacement: " " } }
+                    }
+                },
+                {
+                    '$project': {
+                        'texts': { $rtrim: { input: "$texts" } },
+                    }
+                },
+                {
+                    '$group': {
+                        '_id': '$texts',
+                        'count': {
+                            '$sum': 1
+                        }
+                    }
+                },
+                {
+                    $sort: { count: -1 }
+                },
+                {
+                    $limit: 5
+                }
+            ]
         const resultsQty = [...results, { $count: "searchResults" }];
-        (req as RequestCustom).searchQueries = { results, resultsQty };
-        return next();
+        (req as RequestCustom).searchQueries = { results, resultsQty, autocompleteHints };
     };
 
-    const { price, availability, ...rest } = params;
-    let query: query = Object.fromEntries(Object.entries(rest).map(([k, v]) => [searchParams[k as keyof typeof searchParams], v]));
+    const { price, inStock, brand, ...rest } = params;
+    let query: query = Object.fromEntries(Object.entries(rest).map(([k, v]) => [searchParams[k as keyof typeof searchParams], k == 'p' || k == 'onpage' ? +v : v]).filter(e => e[0] !== undefined));
 
     if (price && ('' + price).split(';').length == 2) {
         const [minPrice, maxPrice] = price.split(';');
-        query[searchParams['price']] = { $gt: +minPrice, $lt: +maxPrice[1] };
+        query['$or'] = [{ salePrice: { $lte: +maxPrice, $gte: +minPrice } }, { price: { $lte: +maxPrice, $gte: +minPrice } }]
     };
 
-    if (availability) {
-        query[searchParams['availability']] = { $gt: 0 };
+    if (inStock) {
+        query[searchParams['inStock']] = { $gt: 0 };
+    };
+
+    if (brand) {
+        query[searchParams['brand']] = { $in: brand.split(';') };
     };
 
     (req as RequestCustom).queryBD = query;
@@ -93,10 +246,10 @@ const parseParams = (req: express.Request) => {
     const s = req.url.split('?')[1] || req.headers.referer?.split('?')[1];
     const path = req.headers.referer || req.url;
 
-    const search: params = s ? Object.fromEntries(s.split('&').map(str => {
-        const [k, v] = str.split('=');
-        const value = k == 'onpage' || k == 'p' ? +decodeURI(v) : decodeURI(v);
-        return [k, value]
+    const search: params = s ? Object.fromEntries([...new URLSearchParams(s).entries()].map(e => {
+        const [k, v] = e;
+        const value = k == 'onpage' || k == 'p' ? +v : v;
+        return [k, value];
     })) : {};
 
     const category = path.match(CAT_REG)?.groups?.category || req.query.category as string;
@@ -113,135 +266,6 @@ export default function getQueryFromSearchParams(req: express.Request, res: expr
     try {
         const params = parseParams(req);
         getQuery(params, req, next);
-        //     const autocomplete =
-        //         [
-        //             {
-        //                 $search: {
-
-        //                     compound: {
-        //                         should: [
-        //                             {
-        //                                 autocomplete: {
-        //                                     query: search.s,
-        //                                     path: 'name',
-        //                                 },
-        //                             },
-        //                             {
-        //                                 autocomplete: {
-        //                                     query: search.s,
-        //                                     path: 'description',
-        //                                 },
-        //                             },
-        //                             {
-        //                                 autocomplete: {
-        //                                     query: search.s,
-        //                                     path: 'brand',
-        //                                 },
-        //                             }
-        //                         ],
-        //                         must: [
-        //                             {
-        //                                 range: {
-        //                                     path: "amount",
-        //                                     "gt": 0,
-        //                                 },
-        //                             }
-        //                         ]
-        //                     },
-        //                 },
-        //             },
-        //             { $limit: 5 },
-        //         ];
-        //     const fullresults =
-        //         [
-        //             {
-        //                 $search: {
-        //                     compound: {
-        //                         should: [
-        //                             {
-        //                                 autocomplete: {
-        //                                     query: search.s,
-        //                                     path: 'name',
-        //                                 },
-        //                             },
-        //                             {
-        //                                 autocomplete: {
-        //                                     query: search.s,
-        //                                     path: 'description',
-        //                                 },
-        //                             },
-        //                             {
-        //                                 autocomplete: {
-        //                                     query: search.s,
-        //                                     path: 'brand',
-        //                                 },
-        //                             }
-        //                         ],
-        //                     },
-        //                 },
-        //             },
-        //         ];
-        //     const ResultsQty =
-        //         [
-        //             {
-        //                 $search: {
-        //                     compound: {
-        //                         should: [
-        //                             {
-        //                                 autocomplete: {
-        //                                     query: search.s,
-        //                                     path: 'name',
-        //                                 },
-        //                             },
-        //                             {
-        //                                 autocomplete: {
-        //                                     query: search.s,
-        //                                     path: 'description',
-        //                                 },
-        //                             },
-        //                             {
-        //                                 autocomplete: {
-        //                                     query: search.s,
-        //                                     path: 'brand',
-        //                                 },
-        //                             }
-        //                         ],
-        //                     },
-        //                 },
-        //             },
-        //             {
-        //                 $count: "searchResults"
-        //             }
-        //         ];
-        //     (req as RequestCustom).searchQueries = { autocomplete, fullresults, ResultsQty };
-        // } else {
-        //     const query = Object.keys(search).reduce((acc, cur) => {
-        //         try {
-        //             const key = cur as keyof typeof searchParams;
-        //             const productProp = searchParams[key];
-        //             if (productProp) {
-        //                 let value = search[cur];
-        //                 if (('' + value).split(';').length == 2 && cur == 'price') {
-        //                     acc[productProp] = { $gt: +('' + value).split(';')[0], $lt: +('' + value).split(';')[1] };
-        //                 } else if (cur == 'availability') {
-        //                     if (search[cur]) {
-        //                         acc[productProp] = { $gt: 0 };
-        //                     };
-        //                 } else if (cur == 'category') {
-        //                     acc[productProp] = { $in: categoryIds }
-        //                 } else {
-        //                     acc[productProp] = search[cur] as keyof typeof search;
-        //                 };
-        //             };
-        //             return acc;
-        //         } catch (error) {
-        //             console.log(error);
-        //             return acc;
-        //         };
-        //     }, {} as RequestCustom["queryBD"]);
-        //     (req as RequestCustom).queryBD = query;
-        // };
-        // next();
     } catch (error) {
         console.log(req.url);
         console.log(error);

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Container, CircularProgress } from '@mui/material';
+import { Container } from '@mui/material';
 import { products } from '../../../containers/Home/FeaturedProducts_container';
 
 import getCarousel, { MultipleCarousel } from '../../../common/HOC/MultipleCarousel';
 import CarouselHeader from './Carousel/CarouselHeader';
 import ProductListCard, { ProductSkeleton } from '../../ProductList/ProductList_card';
+import { StyledCircularProgress } from './../../../common/components/styledComponents';
 
 
 const FeaturedProducts: React.FC<{ products: products }> = ({ products }) => {
@@ -27,7 +28,7 @@ const FeaturedProducts: React.FC<{ products: products }> = ({ products }) => {
 
                     }
                 </MultipleCarousel>
-                : <CircularProgress />
+                : <StyledCircularProgress />
             }
         </Container>
     )

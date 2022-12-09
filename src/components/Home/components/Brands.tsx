@@ -11,7 +11,6 @@ import { RouterChip } from '../../../common/components/styledComponents';
 import ArrowBackIosRoundedIcon from '@mui/icons-material/ArrowBackIosRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import getCarousel, { MultipleCarousel } from '../../../common/HOC/MultipleCarousel';
-import { CSSProperties } from '@mui/styled-engine';
 
 const Brands: React.FC<{ brands: brands }> = ({ brands }) => {
 
@@ -38,7 +37,7 @@ const Brands: React.FC<{ brands: brands }> = ({ brands }) => {
             </Stack>
         </Container>
     )
-}
+};
 
 const Brand: React.FC<{ brand: brands[number] }> = ({ brand }) => {
     return (
@@ -59,6 +58,6 @@ const Brand: React.FC<{ brand: brands[number] }> = ({ brand }) => {
             />
         </MenuItem>
     )
-}
+};
 
 export default Brands;

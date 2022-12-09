@@ -8,7 +8,8 @@ import {
     MenuItem,
     MenuList,
     Avatar,
-    Skeleton
+    Skeleton,
+    Divider
 } from '@mui/material';
 
 import { Search, SearchIconWrapper, StyledInputBase, SearchContainer } from '../../../common/components/styledComponents';
@@ -17,33 +18,42 @@ import { type GetAutocompleteProducts } from '../../../containers/Header/Header_
 import SearchIcon from '@mui/icons-material/Search';
 import ImageNotSupportedIcon from '@mui/icons-material/ImageNotSupported';
 
+interface hint {
+    hintSpans: {
+        text: string;
+        bold: boolean;
+    }[];
+    hint: string;
+}
+
+type searchResults = Awaited<ReturnType<GetAutocompleteProducts>>
 
 const SearchBox: React.FC<{ GetAutocompleteProducts: GetAutocompleteProducts }> = ({ GetAutocompleteProducts }) => {
 
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [search, setSearch] = React.useState('');
-    const [searchResults, setSearchResults] = React.useState<Awaited<ReturnType<GetAutocompleteProducts>>>(null);
+    const [searchResults, setSearchResults] = React.useState<Omit<searchResults, 'aborted'>>({ products: undefined, hints: undefined });
     const [showSearchResults, setShowSearchResults] = React.useState<boolean>(false);
 
     React.useEffect(() => {
         setSearch(searchParams.get('s') || '');
     }, [searchParams])
 
-    const handleSearchApply = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key == 'Enter' && search != '') {
-            navigate(`/search/?s=${search}`);
-            setSearchResults(null);
+    const handleSearchApply = (e: React.KeyboardEvent<HTMLInputElement> | { key: string }, textToApply?: string) => {
+        if ((e.key == 'Enter' && search != '') || textToApply) {
+            const params = new URLSearchParams(`s=${textToApply || search}`);
+            navigate(`/search/?${params.toString()}`);
+            setSearchResults({ products: undefined, hints: undefined });
         };
     };
+
     const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearch(e.target.value);
         if (e.target.value != '') {
             setShowSearchResults(true);
-            const results = await GetAutocompleteProducts(e.target.value);
-            setSearchResults(results);
-        } else {
-            setSearchResults(null);
+            const {aborted, ...results} = await GetAutocompleteProducts(e.target.value);
+            !aborted && setSearchResults(results);
         };
     };
     return (
@@ -60,7 +70,7 @@ const SearchBox: React.FC<{ GetAutocompleteProducts: GetAutocompleteProducts }> 
                     placeholder="Найти…"
                     inputProps={{ 'aria-label': 'search' }}
                 />
-                {searchResults && showSearchResults &&
+                {(searchResults.products || searchResults.hints) && showSearchResults &&
                     <Box
                         component={MenuList}
                         sx={{
@@ -71,8 +81,27 @@ const SearchBox: React.FC<{ GetAutocompleteProducts: GetAutocompleteProducts }> 
                             overflow: 'hidden auto'
                         }}>
                         {
-                            searchResults.map(product =>
-                                <MenuItem key={product._id as unknown as string}>
+                            searchResults.hints && searchResults.hints.map((item, i) =>
+                                <MenuItem key={item.hint}>
+                                    <Link sx={{ width: '100%', cursor: 'pointer', display: 'flex', gap: 1, alignItems: 'center' }} className='woUnderline' onClick={(e) => { e.preventDefault(); setSearch(item.hint); handleSearchApply({ key: 'Enter' }, item.hint) }}>
+                                        <SearchIcon />
+                                        <Typography>
+                                            {
+                                                item.hintSpans.map(span =>
+                                                    <Typography key={span.text} component={'span'} sx={{ fontWeight: span.bold ? 600 : null }}>{span.text}</Typography>
+                                                )
+                                            }
+                                        </Typography>
+                                    </Link>
+                                </MenuItem>
+                            )
+                        }
+                        {
+                            searchResults.hints && searchResults.products && <Divider />
+                        }
+                        {
+                            searchResults.products && searchResults.products.map(product =>
+                                <MenuItem key={product._id}>
                                     <Link
                                         href={product.breadcrumps ? product.breadcrumps[product.breadcrumps?.length - 1].link : '/'}
                                         className='woUnderline'

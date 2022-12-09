@@ -16,7 +16,7 @@ import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
 import { ProductInState } from '../../../server/helpers';
 import useProductActions from './../../common/hooks/useProductActions';
 
-export const minWidth = '280px';
+export const minWidth = '250px';
 
 const ProductListCard: React.FC<{ product: ProductInState }> = ({ product }) => {
     const { handleAddToCart, handleAddToFavorites, isAddedToCart, isAddedToFavorites } = useProductActions(product._id);
@@ -71,8 +71,6 @@ const ProductListCard: React.FC<{ product: ProductInState }> = ({ product }) => 
         borderColor: 'primary.main'
     };
 
-    const salePrice = product.salePrice || product.price;
-
     return (
         <Card elevation={0} sx={{ borderRadius: '10px', flex: '1 1 0', minWidth: minWidth, '&:hover': { boxShadow: 1 }, opacity: product.amount > 0 ? '1' : '0.5' }} component={'article'}>
             <CardActionArea disableRipple={true} href={product.breadcrumps![product.breadcrumps!.length - 1].link} sx={{ p: 2, pb: 3, height: '100%', borderRadius: 'inherit', '&:hover .MuiCardActionArea-focusHighlight': { opacity: 0 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -96,8 +94,8 @@ const ProductListCard: React.FC<{ product: ProductInState }> = ({ product }) => 
                     <Stack sx={{ minWidth: 0 }} gap={1}>
                         <Stack gap={2} direction={'row'} alignItems={'center'} justifyContent={'space-between'} sx={{ minHeight: '32px' }}>
                             <Typography variant='h4' component={'p'} sx={{ fontWeight: 600, display: 'flex', gap: 1 }}>
-                                {`${salePrice} ₽`}
-                                {product.salePrice &&
+                                {`${product.salePrice} ₽`}
+                                {product.discount &&
                                     <Typography
                                         component={'span'}
                                         sx={{

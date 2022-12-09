@@ -1,41 +1,45 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
-import { getSetters, getClearers } from '../generics';
 import { filtersState } from '../../common/types';
 
 const initialState: filtersState = {}
 
-
-const setters = getSetters(initialState);
-const clearers = getClearers(initialState);
+export const filtersStateKeys: (keyof filtersState)[] = [
+    'price',
+    'inStock',
+    'category',
+    'brand',
+    'sorting',
+    'p',
+    'onpage',
+    's'
+];
 
 
 const filtersSlice = createSlice({
     name: 'filters',
     initialState,
     reducers: {
-        ...setters,
-        ...clearers,
-        clearFilters: state => state = initialState
+        clearFilters: (state) => state = initialState,
+        setFilters: (state, action: PayloadAction<filtersState>) => {
+            const filteredParams: filtersState = Object.fromEntries(Object.entries(action.payload).filter(e => (filtersStateKeys as any).includes(e[0])));
+            Object.keys(filteredParams).forEach(k => {
+                const key = k as keyof typeof state;
+                if (key == 'price') {
+                    const [min, max] = filteredParams[key]!.split(';');
+                    if (isNaN(+min) || isNaN(+max)) return;
+                };
+                (state[key] as typeof state[typeof key]) = filteredParams[key];
+            });
+        },
+        clearSomeFilters: (state, action: PayloadAction<keyof filtersState>) => {
+            delete state[action.payload]
+        }
     }
 });
 
 
-export const {
-    setMinPrice,
-    clearMinPrice,
-    setMaxPrice,
-    clearMaxPrice,
-    setAvailiability,
-    clearAvailiability,
-    setCategory,
-    clearCategory,
-    setBrand,
-    clearBrand,
-    setS,
-    clearS,
-    clearFilters
-} = filtersSlice.actions;
+export const filterActions = filtersSlice.actions;
 
 export default filtersSlice.reducer;
 export const selectFilters = (state: AppState) => state.filters;

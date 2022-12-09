@@ -128,7 +128,7 @@ const Header: React.FC<Props> = ({ user, favorits, cart, Login, SignUp, brands, 
                                 anchorEl={userMenuAnchorEl}
                                 open={userMenuOpen}
                                 onClose={handleUserMenuClose}
-                                sx={{ zIndex: '0', pointerEvents: 'none' }}
+                                sx={{ zIndex: '5', pointerEvents: 'none' }}
                                 PaperProps={{
                                     sx: {
                                         overflow: 'visible',

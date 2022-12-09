@@ -112,10 +112,10 @@ theme.typography = {
     ...theme.typography,
     h1: {
         ...theme.typography.h1,
-        fontSize: '2.4rem',
+        fontSize: '2rem',
         fontWeight: 600,
         [theme.breakpoints.up('md')]: {
-            fontSize: '3.7rem',
+            fontSize: '2.7rem',
         },
     },
     h2: {

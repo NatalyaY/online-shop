@@ -46,15 +46,14 @@ type UserOrItemsWithStatus<T, A> =
     : never
     : never
 
-function typedKeys<T>(o: { [K in keyof T]: T[K] }): (keyof T)[] {
-    return Object.keys(o) as (keyof T)[];
+function typedKeys<T>(o: { [K in keyof T]: T[K] }) {
+    return Object.keys(o) as (string & keyof T)[];
 };
 
 export function getSetters<T>(obj: { [K in keyof T]: T[K] }): Setters<T> {
     return typedKeys(obj).reduce((acc, cur) => {
-        const val = obj[cur];
-        const newKey = `set${cur.toString().toUpperCase()}` as keyof Setters<T>;
-        (acc[newKey] as CaseReducer<T, PayloadAction<typeof val>>) = (state, action) => {
+        const newKey = `set${cur[0].toUpperCase() + cur.slice(1)}` as keyof Setters<T>;
+        (acc[newKey] as CaseReducer<T, PayloadAction<typeof obj[typeof cur]>>) = (state, action) => {
             const key = cur as keyof typeof state;
             (state[key] as typeof obj[typeof cur]) = action.payload;
         };
@@ -64,7 +63,7 @@ export function getSetters<T>(obj: { [K in keyof T]: T[K] }): Setters<T> {
 
 export function getClearers<T>(obj: { [K in keyof T]: T[K] }): Clearers<T> {
     return typedKeys(obj).reduce((acc, cur) => {
-        const newKey = `set${cur.toString().toUpperCase()}` as keyof Clearers<T>;
+        const newKey = `clear${cur[0].toUpperCase() + cur.slice(1)}` as keyof Clearers<T>;
         (acc[newKey] as CaseReducer<T>) = (state) => {
             const key = cur as keyof typeof state;
             delete state[key];
