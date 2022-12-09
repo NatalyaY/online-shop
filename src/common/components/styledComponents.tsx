@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Toolbar, IconButton, Link, InputBase, IconButtonProps, Chip, ChipProps, Typography, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { Toolbar, IconButton, Link, InputBase, IconButtonProps, Chip, ChipProps, Typography, Accordion, AccordionSummary, AccordionDetails, CircularProgress } from '@mui/material';
 import { styled, alpha } from '@mui/material/styles';
 import { IMaskInput } from 'react-imask';
 import { Theme, SxProps } from '@mui/material/styles';
@@ -147,6 +147,10 @@ export const SearchContainer = styled('div')(({ theme }) => ({
         order: 2,
     },
 }));
+
+export const StyledCircularProgress = styled(CircularProgress)(() => ({
+    margin: '0 auto',
+}))
 
 export const Search = styled('div')(({ theme }) => ({
     position: 'relative',

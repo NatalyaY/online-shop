@@ -4,28 +4,15 @@ import { filtersState } from '../../common/types';
 
 const initialState: filtersState = {}
 
-// const stateExample: filtersState = {
-//     minPrice: undefined,
-//     maxPrice: undefined,
-//     availiability: undefined,
-//     category: undefined,
-//     brand: undefined,
-//     s: undefined,
-//     sort: undefined,
-// }
-
-
-// const setters = getSetters(stateExample);
-// const clearers = getClearers(stateExample);
-
-const filtersStateKeys: (keyof filtersState)[] = [
+export const filtersStateKeys: (keyof filtersState)[] = [
     'price',
-    'availability',
+    'inStock',
     'category',
     'brand',
     'sorting',
     'p',
-    'onpage'
+    'onpage',
+    's'
 ];
 
 
@@ -33,15 +20,20 @@ const filtersSlice = createSlice({
     name: 'filters',
     initialState,
     reducers: {
-        // ...setters,
-        // ...clearers,
-        clearFilters: state => state = initialState,
+        clearFilters: (state) => state = initialState,
         setFilters: (state, action: PayloadAction<filtersState>) => {
-            const filteredParams = Object.fromEntries(Object.entries(action.payload).filter(e => (filtersStateKeys as any).includes(e[0])));
+            const filteredParams: filtersState = Object.fromEntries(Object.entries(action.payload).filter(e => (filtersStateKeys as any).includes(e[0])));
             Object.keys(filteredParams).forEach(k => {
                 const key = k as keyof typeof state;
+                if (key == 'price') {
+                    const [min, max] = filteredParams[key]!.split(';');
+                    if (isNaN(+min) || isNaN(+max)) return;
+                };
                 (state[key] as typeof state[typeof key]) = filteredParams[key];
             });
+        },
+        clearSomeFilters: (state, action: PayloadAction<keyof filtersState>) => {
+            delete state[action.payload]
         }
     }
 });

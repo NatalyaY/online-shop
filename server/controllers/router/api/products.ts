@@ -2,95 +2,43 @@ import express from 'express';
 import { RequestCustom } from '../../../helpers';
 import getQueryFromSearchParams, { getQuery } from '../../middleware/queryFromParams';
 import fetchFromDB from '../../middleware/fetchFromDB';
-import createError from 'http-errors';
 
 const router = express.Router();
 
-router.get('/', getQueryFromSearchParams, fetchFromDB({ coll: ['products'] }), async (req, res) => {
-    try {
-        const data = (req as RequestCustom).fetchedData;
-        const result = {
-            products: data.products,
-            qty: data.productsQty,
-            params: {
-                params: (req as RequestCustom).reqParams,
-                qty: data.productsQty,
-                productsBrands: data.productsBrands,
-                productsCategories: data.productsCategories,
-                minPrice: data.minPrice,
-                maxPrice: data.maxPrice
-            },
-        };
-        res
-            .status(200)
-            .json(result);
-    } catch (error) {
-        const message = error instanceof Error || createError.isHttpError(error) ? error.message : error;
-        const status = createError.isHttpError(error) ? error.statusCode : 500;
-        res
-            .status(200)
-            .json({ error: { message: message, status } });
+const sendResults = (req: express.Request, res: express.Response) => {
+    const { productsQty, ...rest } = (req as RequestCustom).fetchedData;
+    const result = {
+        params: (req as RequestCustom).reqParams,
+        qty: productsQty,
+        ...rest
     };
+    res
+        .status(200)
+        .json(result);
+};
+
+router.get('/', getQueryFromSearchParams, fetchFromDB({ coll: ['products'] }), sendResults);
+
+router.get('/all', fetchFromDB({ limit: false, coll: ['products'], productOptions: false }), (req, res) => {
+    const data = (req as RequestCustom).fetchedData;
+    const result = {
+        products: data.products,
+    };
+    res
+        .status(200)
+        .json(result);
 });
 
-router.get('/all', fetchFromDB({ limit: false, coll: ['products'] }), async (req, res) => {
-    try {
+router.get('/autocomplete', getQueryFromSearchParams, fetchFromDB({ coll: ['products'], autocomplete: true }), (req, res) => {
         const data = (req as RequestCustom).fetchedData;
-        const result = {
-            products: data.products,
-        };
         res
             .status(200)
-            .json(result);
-    } catch (error) {
-        const message = error instanceof Error || createError.isHttpError(error) ? error.message : error;
-        const status = createError.isHttpError(error) ? error.statusCode : 500;
-        res
-            .status(200)
-            .json({ error: { message: message, status } });
-    };
+            .json({ products: data.products, hints: data.hints });
 });
 
-router.get('/autocomplete', getQueryFromSearchParams, fetchFromDB({ coll: ['products'], autocomplete: true }), async (req, res) => {
-    try {
-        const data = (req as RequestCustom).fetchedData;
-        res
-            .status(200)
-            .json(data.products);
-    } catch (error) {
-        const message = error instanceof Error || createError.isHttpError(error) ? error.message : error;
-        const status = createError.isHttpError(error) ? error.statusCode : 500;
-        res
-            .status(200)
-            .json({ error: { message: message, status } });
-    };
-});
-
-router.post('/custom', (req, res, next) => getQuery(req.body, req, next), fetchFromDB({ coll: ['products'] }), async (req, res) => {
-    try {
-        const data = (req as RequestCustom).fetchedData;
-        const result = {
-            products: data.products,
-            qty: data.productsQty,
-            params: {
-                params: (req as RequestCustom).reqParams,
-                qty: data.productsQty,
-                productsBrands: data.productsBrands,
-                productsCategories: data.productsCategories,
-                minPrice: data.minPrice,
-                maxPrice: data.maxPrice
-            },
-        };
-        res
-            .status(200)
-            .json(result);
-    } catch (error) {
-        const message = error instanceof Error || createError.isHttpError(error) ? error.message : error;
-        const status = createError.isHttpError(error) ? error.statusCode : 500;
-        res
-            .status(200)
-            .json({ error: { message: message, status } });
-    };
-});
+router.post('/custom/:limit?',
+    (req, res, next) => getQuery(req.body, req, next),
+    (req, res, next) => fetchFromDB({ limit: req.params.limit ? +req.params.limit : false, coll: ['products'], productOptions: false })(req, res, next),
+    sendResults);
 
 export default router;

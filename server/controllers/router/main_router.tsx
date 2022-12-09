@@ -36,7 +36,7 @@ router.use((req, res, next) => {
 router.use(getQueryFromSearchParams, fetchFromDB());
 
 router.get('/*', async (req, res) => {
-    const { products, productsQty, favorites, cart, productsBrands, productsCategories, minPrice, maxPrice, ...data } = (req as RequestCustom).fetchedData;
+    const { products, productsQty, favorites, cart, productsBrands, productsCategories, minPrice, maxPrice, availableBrands, availableCategories, ...data } = (req as RequestCustom).fetchedData;
     const currentUser = (req as RequestCustom).currentUser;
     const { _id, cart:c, unauthorizedId, orders, favorites:f, password, ...user } = currentUser;
 
@@ -49,7 +49,7 @@ router.get('/*', async (req, res) => {
             products: {
                 products,
                 qty: productsQty,
-                queryParams: [{ params: (req as RequestCustom).reqParams, qty: productsQty, productsBrands, productsCategories, minPrice, maxPrice }],
+                queryParams: [{ params: (req as RequestCustom).reqParams, products, qty: productsQty, productsBrands, productsCategories, minPrice, maxPrice, availableBrands, availableCategories }],
                 status: 'iddle'
             }
         };

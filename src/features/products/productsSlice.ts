@@ -3,6 +3,7 @@ import { params } from '../../../server/helpers';
 import type { AppState } from '../../app/store';
 import { translitBrand } from '../../common/helpers/translitBrand';
 import { error, productsState } from '../../common/types';
+import getCategoryParentIds from './../../common/helpers/getCategoryParentIds';
 
 const initialState: productsState = {
     status: "iddle",
@@ -15,7 +16,7 @@ export const fetchAllProducts = createAsyncThunk<
     {
         rejectValue: { message: error['message'] }
     }
->('products/fetchAllProducts', async (undefined, { rejectWithValue }) => {
+>('products/fetchAllProducts', async (_, { rejectWithValue }) => {
     try {
         const response = await fetch("/api/products/all");
         const responseData = await response.json();
@@ -30,12 +31,12 @@ export const fetchAllProducts = createAsyncThunk<
 });
 
 export const fetchSomeProducts = createAsyncThunk<
-    { products: productsState['products'], qty: number, params: NonNullable<productsState['queryParams']>[number] },
+    NonNullable<productsState['queryParams']>[number],
     undefined,
     {
         rejectValue: { message: error['message'] }
     }
->('products/fetchSomeProducts', async (undefined, { rejectWithValue }) => {
+>('products/fetchSomeProducts', async (_, { rejectWithValue }) => {
     try {
         const response = await fetch('/api/products');
         const responseData = await response.json();
@@ -50,7 +51,7 @@ export const fetchSomeProducts = createAsyncThunk<
 });
 
 export const fetchProductsByIDs = createAsyncThunk<
-    { products: productsState['products'], qty: number, params: NonNullable<productsState['queryParams']>[number] },
+    NonNullable<productsState['queryParams']>[number],
     string[],
     {
         rejectValue: { message: error['message'] }
@@ -76,14 +77,16 @@ export const fetchProductsByIDs = createAsyncThunk<
 });
 
 export const fetchCustomProducts = createAsyncThunk<
-    { products: productsState['products'], qty: number, params: NonNullable<productsState['queryParams']>[number] },
-    params,
+    NonNullable<productsState['queryParams']>[number],
+    {params: params, limit?: number},
     {
         rejectValue: { message: error['message'] }
     }
->('products/fetchCustomProducts', async (params, { rejectWithValue }) => {
+>('products/fetchCustomProducts', async (arg, { rejectWithValue }) => {
+    const { params, limit } = arg;
+    const url = limit ? `/api/products/custom/${limit}` : '/api/products/custom/';
     try {
-        const response = await fetch('/api/products/custom', {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json;charset=utf-8'
@@ -125,7 +128,7 @@ const productsSlice = createSlice({
                 const products = new Set([...normalizedStateProducts, ...normalizedActionProducts]);
                 state.products = [...products].map(p => JSON.parse(p));
                 state.qty = action.payload.qty;
-                state.queryParams = state.queryParams ? [...state.queryParams, action.payload.params] : [action.payload.params];
+                state.queryParams = state.queryParams ? [...state.queryParams, action.payload] : [action.payload];
             })
             .addCase(fetchProductsByIDs.fulfilled, (state, action) => {
                 const normalizedStateProducts = JSON.parse(JSON.stringify(state.products.map(p => JSON.stringify(p))));
@@ -140,7 +143,7 @@ const productsSlice = createSlice({
 
                 const products = new Set([...normalizedStateProducts, ...normalizedActionProducts]);
                 state.products = [...products];
-                state.queryParams = state.queryParams ? [...state.queryParams, action.payload.params] : [action.payload.params];
+                state.queryParams = state.queryParams ? [...state.queryParams, action.payload] : [action.payload];
             })
     }
 });
@@ -151,21 +154,45 @@ export default productsSlice.reducer;
 export const selectProducts = (state: AppState, filters: AppState['filters'] = state.filters, getAllProducts: boolean = false, paginaion: boolean = true) => {
     const products = state.products.products;
     const categories = state.categories;
-
     const productsQueryParam = state.products.queryParams?.find(p => {
         return JSON.stringify(Object.fromEntries(Object.entries(p.params).map(e => [e[0], "" + e[1]]).sort())) ==
             JSON.stringify(Object.fromEntries(Object.entries(filters).map(e => [e[0], "" + e[1]]).sort()))
     });
 
-    if (!productsQueryParam && state.products.qty != undefined) {
-        return { selectedProducts: new Array(filters.onpage ? +filters.onpage : 20).fill(null), qty: filters.onpage ? +filters.onpage : 20 };
+    if (!productsQueryParam && (state.products.qty != undefined || filters.s || getAllProducts)) {
+        return {
+            selectedProducts: null,
+            qty: null,
+            minPrice: null,
+            maxPrice: null,
+            productsCategories: null,
+            productsBrands: null,
+            availableCategories: null,
+            availableBrands: null
+        };
+    };
+
+    if (productsQueryParam) {
+        const { params, products, ...rest } = productsQueryParam;
+        return { selectedProducts: paginaion ? products.slice(0, 20) : products, ...rest };
     };
 
     if (Object.keys(filters).length == 0) {
-        return { selectedProducts: products, qty: products.length };
+        const minPrice = Math.min(...products.map(p => p.salePrice));
+        const maxPrice = Math.max(...products.map(p => p.salePrice));
+
+        return {
+            selectedProducts: paginaion ? products.slice(0, 20) : products,
+            qty: products.length,
+            minPrice,
+            maxPrice,
+            productsCategories: categories.map(c => c.UUID),
+            productsBrands: state.brands.map(b => b.text),
+            availableBrands: state.brands.map(b => b.text)
+        };
     } else {
-        if (products.length == 0 || (getAllProducts && state.products.qty != undefined)) return { selectedProducts: [], qty: 0 };
         const { p, onpage, sorting, ...restFilters } = filters;
+        const onPageOrDefault = onpage ? +onpage : 20;
 
         let offset = 0;
         if (p) {
@@ -175,24 +202,50 @@ export const selectProducts = (state: AppState, filters: AppState['filters'] = s
             };
         };
 
-        const filteredProducts = products.filter((product) => {
-            const productCategory = categories.find(cat => cat.UUID == product.categoryId);
+        const filteredProductsByCategory = products.filter((product) => {
+            return restFilters.category ? getCategoryParentIds(product.categoryId, state.categories).includes(restFilters.category) : true;
+        });
+
+        const filteredProductsByBrandOrCategory = products.filter((product) => {
+            const isInCategory = restFilters.category ? getCategoryParentIds(product.categoryId, state.categories).includes(restFilters.category) : true;
+            const isInBrand = restFilters.brand ? restFilters.brand.split(';').includes(translitBrand(product.brand)) : true;
+            return isInCategory && isInBrand;
+        });
+
+        const getFilteredProducts = (includeBrandFilter: boolean) => (includeBrandFilter ? filteredProductsByBrandOrCategory : filteredProductsByCategory).filter((product) => {
             let isInPrice = true;
             if (restFilters.price) {
-                const [minPrice, maxPrice] = restFilters.price.split(';');
+                const [minPrice, maxPrice] = decodeURIComponent(restFilters.price).split(';');
                 const price = product.salePrice || product.price;
                 if ((+price < +minPrice) || (+price > +maxPrice)) {
                     isInPrice = false;
                 };
             };
-            const isInAvailiability = restFilters.availability ? +product.amount > 0 : true;
-            const isInCategory = restFilters.category ? product.categoryId == restFilters.category || (productCategory?._parentId == restFilters.category) : true;
-            const isInBrand = restFilters.brand ? translitBrand(product.brand.toLowerCase()) == restFilters.brand.toLowerCase() : true;
-            return isInPrice && isInCategory && isInAvailiability && isInBrand;
+            const isInAvailiability = restFilters.inStock ? +product.amount > 0 : true;
+            return isInPrice && isInAvailiability;
         });
 
-        const sortedProducts = sortProducts(filteredProducts, sorting || 'popular');
-        return { selectedProducts: paginaion ? sortedProducts.slice(offset, offset + (onpage ? +onpage : 20)) : sortedProducts, qty: filteredProducts.length };
+        const filteredProductsAllFilters = getFilteredProducts(true);
+        const filteredProductsWOBrand = getFilteredProducts(false);
+
+
+        const minPrice = Math.min(...filteredProductsByBrandOrCategory.map(p => p.salePrice));
+        const maxPrice = Math.max(...filteredProductsByBrandOrCategory.map(p => p.salePrice));
+        const productsCategories = [...new Set(filteredProductsByBrandOrCategory.map(p => getCategoryParentIds(p.categoryId, state.categories)).flat())];
+        const productsBrands = [...new Set(filteredProductsByCategory.map(p => p.brand))].sort();
+        const availableBrands = [...new Set(filteredProductsWOBrand.map(p => p.brand))].sort();
+
+        const sortedProducts = sortProducts(filteredProductsAllFilters, sorting || 'popular');
+
+        return {
+            selectedProducts: paginaion ? sortedProducts.slice(offset, offset + onPageOrDefault) : sortedProducts,
+            qty: filteredProductsAllFilters.length,
+            minPrice,
+            maxPrice,
+            productsCategories,
+            productsBrands,
+            availableBrands
+        };
     };
 };
 
@@ -209,8 +262,8 @@ const sortProducts = (products: AppState['products']['products'], sort: 'new' | 
     const sortingFns: { [k in typeof sort]: (a: typeof products[number], b: typeof products[number]) => number } = {
         new: (a, b) => a.creationDate > b.creationDate ? -1 : a.creationDate < b.creationDate ? 1 : b._id > a._id ? 1 : -1,
         popular: (a, b) => a.popularity > b.popularity ? -1 : a.popularity < b.popularity ? 1 : b._id > a._id ? 1 : -1,
-        price_desc: (a, b) => (a.salePrice || a.price) > (b.salePrice || b.price) ? -1 : (a.salePrice || a.price) < (b.salePrice || b.price) ? 1 : b._id > a._id ? 1 : -1,
-        price_asc: (a, b) => (a.salePrice || a.price) > (b.salePrice || b.price) ? 1 : (a.salePrice || a.price) < (b.salePrice || b.price) ? -1 : b._id > a._id ? 1 : -1,
+        price_desc: (a, b) => a.salePrice > b.salePrice ? -1 : a.salePrice < b.salePrice ? 1 : b._id > a._id ? 1 : -1,
+        price_asc: (a, b) => a.salePrice > b.salePrice ? 1 : a.salePrice < b.salePrice ? -1 : b._id > a._id ? 1 : -1,
     };
     return products.sort(sortingFns[sort]);
 };

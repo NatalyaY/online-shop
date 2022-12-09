@@ -35,7 +35,7 @@ export type brandsState = BrandInState[];
 
 export type favoritesState = GetAllOptionalTypes<FavoriteMapped> & DBStatus & withItems<FavoriteMapped["items"][number]>;
 
-export type filtersState = Omit<params, '_id' | 's'>;
+export type filtersState = Omit<params, '_id'>;
 
 export interface ordersState extends withItems<OrderMapped["_id"]> {
     orders?: OrderMapped[]
@@ -43,9 +43,21 @@ export interface ordersState extends withItems<OrderMapped["_id"]> {
 
 export type userState = UserMapped & DBStatus;
 
+interface queryParams {
+    params: params,
+    products: ProductInState[],
+    qty: number,
+    productsBrands: string[],
+    productsCategories: string[],
+    minPrice: number,
+    maxPrice: number,
+    availableBrands: string[],
+    availableCategories: string[],
+}
+
 export interface productsState extends DBStatus {
     qty?: number,
-    queryParams?: { params: params, qty: number, productsBrands: string[], productsCategories: string[], minPrice: number, maxPrice: number }[],
+    queryParams?: queryParams[],
     products: ProductInState[]
 };
 

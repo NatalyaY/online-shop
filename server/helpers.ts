@@ -19,29 +19,29 @@ export type fetchedData = {
     orders?: OrderMapped[],
     productsQty?: number,
     productsBrands?: string[],
+    availableBrands?: string[],
     productsCategories?: string[],
+    availableCategories?: string[],
     minPrice?: number,
     maxPrice?: number,
+    hints?: string[],
 };
-
 export interface query {
     categoryId?: string | { $in: string[] },
-    brand?: string,
+    brand?: string | { $in: string[] },
     $or?: [{ salePrice: { $lte: number, $gte: number } }, { price: { $lte: number, $gte: number } }],
     amount?: { $gt: 0 },
     page?: number,
     onpage?: number,
     sorting?: 'new' | 'price_desc' | 'price_asc' | 'popular',
     _id?: ObjectId | { $in: ObjectId[] }
-}
-
-type price = string;
+};
 
 export type params = {
     category?: string,
     brand?: string,
-    price?: `${price};${price}`,
-    availability?: boolean,
+    price?: string,
+    inStock?: '1',
     p?: string,
     onpage?: string,
     sorting?: 'new' | 'price_desc' | 'price_asc' | 'popular',
@@ -49,13 +49,23 @@ export type params = {
     _id?: string | string[],
 };
 
+type aggregationPipeline = { [k: string]: any }[];
 export interface RequestCustom extends express.Request {
     token: { id: ObjectId };
     currentUser: User,
     queryBD: { [k in keyof query]: query[k] },
-    searchQueries: { results: { [k: string]: any }[], resultsQty: { [k: string]: any }[] },
+    searchQueries: { results: aggregationPipeline, resultsQty: aggregationPipeline, autocompleteHints: aggregationPipeline },
     reqParams: params,
-    fetchedData: fetchedData
+    fetchedData: fetchedData,
+    productOptionsQueries: {
+        brandsQuery?: aggregationPipeline,
+        categoriesQuery?: aggregationPipeline,
+        pricesQuery?: aggregationPipeline,
+        availableBrandsQuery?: aggregationPipeline,
+        queryWOBrand: { [k: string]: any },
+        queryByCategory: { [k: string]: any },
+        queryWOFilters: { [k: string]: any },
+    }
 };
 
 export function setAuthCookie(res: express.Response, token: string) {
@@ -130,17 +140,26 @@ export const getBrandWithBreadCrumps = (brands: string[]) => {
 };
 
 export const getCategoryWithBreadcrumps = async (cat: CategoryMapped | CategoryMapped['UUID'], categories: CategoryMapped[] | null = null) => {
-    const category = typeof cat == 'string' ?
-        categories ?
-            categories.find(c => c.UUID == cat)
-            : await collections.categories.findOne({ UUID: cat })
-        : cat;
+    let category: CategoryMapped | Category | undefined | null;
+    if (typeof cat == 'string') {
+        category =
+            categories ?
+                categories.find(c => c.UUID == cat)
+                : await collections.categories.findOne({ UUID: cat })
+            ;
+    } else {
+        category = cat;
+    };
     if (!category) return null;
-    let breadcrumps: breadcrump[] = [{ textRU: category.__text, textEN: translitBrand(category.__text), link: '' }];
-    let parentCategory = !category._parentId ? null :
-        categories ?
-            categories.find(c => c.UUID == category._parentId)
+    let breadcrumps: breadcrump[] = [{ textRU: category.__text, textEN: translitBrand(category.__text), UUID: category.UUID, link: '' }];
+
+    let parentCategory: typeof category | null | undefined = null;
+
+    if (category._parentId) {
+        parentCategory = categories ?
+            categories.find(c => c.UUID == category!._parentId)
             : await collections.categories.findOne({ UUID: category._parentId });
+    };
 
     while (parentCategory) {
         const breadcrump = {
@@ -151,18 +170,24 @@ export const getCategoryWithBreadcrumps = async (cat: CategoryMapped | CategoryM
         };
         breadcrumps.unshift(breadcrump);
         const parent = parentCategory;
-        parentCategory = !parent._parentId ? null :
-            categories ?
+        if (parent._parentId) {
+            parentCategory = categories ?
                 categories.find(c => c.UUID == parent._parentId)
                 : await collections.categories.findOne({ UUID: parent._parentId });
+        } else {
+            parentCategory = null;
+        }
     };
 
     breadcrumps.unshift({ textRU: 'Главная', textEN: '/', link: '/' });
 
     breadcrumps = breadcrumps.map((breadcrump, i) => {
         if (breadcrump.link == '') {
-            breadcrump.link = '/categories' + breadcrumps.slice(0, i).reduce((acc, cur) => acc += cur.textEN + (cur == breadcrumps[0] ? '' : '/'), '')
-                + ((i == breadcrumps.length - 1) ? `cat-${category.UUID}-` : '') + breadcrump.textEN;
+            breadcrump.link = '/categories' + breadcrumps.slice(0, i).reduce((acc, cur) => {
+                acc += cur.textEN + (cur == breadcrumps[0] ? '' : '/');
+                return acc;
+            }, '')
+                + `cat-${breadcrump.UUID}-` + breadcrump.textEN;
         };
         return breadcrump;
     });
@@ -198,7 +223,7 @@ export const getCategoriesIds = async (id: CategoryMapped['UUID'], categories: C
     const getIds = (cat: typeof category) => {
         ids.push(cat.UUID);
         if (cat.subcategories) {
-            cat.subcategories.map(getIds);
+            cat.subcategories.forEach(getIds);
         };
     };
 

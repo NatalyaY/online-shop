@@ -11,8 +11,6 @@ import NotFound from '../components/NotFound/NotFound';
 import Catalog_container from './../containers/Catalog/Catalog_container';
 import Product_container from '../containers/Product/Product_container';
 
-Catalog_container
-
 const App = () => {
   useAllProducts();
 
@@ -36,7 +34,8 @@ const App = () => {
               '/categories/:c1/:c2/:category',
               '/categories/:c1/:category',
               '/categories/:category',
-              '/categories/:c1/:c2/:c3/*'
+              '/categories/:c1/:c2/:c3/*',
+              '/categories'
             ].map((path, i) => <Route path={path} key={i} element={<Catalog_container />} />)
           }
           {
@@ -47,8 +46,7 @@ const App = () => {
               '/:c1/:c2/:c3/*'
             ].map((path, i) => <Route path={path} key={i} element={<Product_container />} />)
           }
-          <Route path="/:c1/:c2/:product" element={<Catalog_container />} />
-          <Route path="/search/?:search" element={<NotFound />} />
+          <Route path="/search" element={<Catalog_container />} />
           <Route path='*' element={<NotFound />} />
         </Routes>
       </main>

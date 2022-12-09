@@ -4,6 +4,7 @@ export default class Product {
     constructor(
         public name: string,
         public price: number,
+        public salePrice: number,
         public image: string[],
         public sku: string,
         public amount: number,
@@ -11,7 +12,6 @@ export default class Product {
         public categoryId: string,
         public creationDate: number,
         public popularity: number,
-        public salePrice?: number,
         public discount?: number,
         public _id?: ObjectId,
         public box_height?: string,
