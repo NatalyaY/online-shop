@@ -17,5 +17,6 @@ export default class User {
         public orders?: ObjectId[],
         public favorites?: ObjectId,
         public cart?: ObjectId,
+        public viewedProducts?: ObjectId[],
     ) { }
 }

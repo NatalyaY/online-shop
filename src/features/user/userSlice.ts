@@ -69,9 +69,29 @@ export const logOut = createAsyncThunk<
     {
         rejectValue: { message: error['message'] }
     }
->('user/logOutInDB', async (undefined, { rejectWithValue }) => {
+>('user/logOutInDB', async (_, { rejectWithValue }) => {
     try {
         const response = await fetch("/api/user/logout");
+        const responseData = await response.json();
+        if (responseData.error) {
+            return rejectWithValue({ message: (responseData.error as error).message })
+        } else {
+            return responseData;
+        };
+    } catch (err) {
+        return rejectWithValue({ message: (err as error).message })
+    };
+});
+
+export const setViews = createAsyncThunk<
+    NonNullable<userState['viewedProducts']>,
+    undefined,
+    {
+        rejectValue: { message: error['message'] }
+    }
+    >('user/setViews', async (_, { rejectWithValue }) => {
+    try {
+        const response = await fetch("/api/user/setViews");
         const responseData = await response.json();
         if (responseData.error) {
             return rejectWithValue({ message: (responseData.error as error).message })
@@ -124,6 +144,9 @@ const userSlice = createSlice({
             .addCase(SignUp.pending, (state) => {
                 state.status = 'loading';
                 delete state.error
+            })
+            .addCase(setViews.fulfilled, (state, action) => {
+                state.viewedProducts = action.payload;
             })
     }
 });

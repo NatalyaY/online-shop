@@ -2,15 +2,15 @@ import express from 'express';
 import createError from 'http-errors';
 import { RequestCustom } from '../../../helpers';
 
-
 import { collections } from '../../../db/services/db.service';
-import { UpdateResult } from 'mongodb';
+import { UpdateResult, ObjectId } from 'mongodb';
 
 
 const router = express.Router();
 
 router.post('/', async (req, res) => {
-    const { item } = req.body;
+    let { item } = req.body;
+    item = new ObjectId(item);
     const user = (req as RequestCustom).currentUser;
     if (!user) throw createError(500, `No user found`);
     let updatedFavorits: UpdateResult | null = null;
@@ -18,6 +18,8 @@ router.post('/', async (req, res) => {
     if (user.favorites) {
         updatedFavorits = await collections.favorites.updateOne({ _id: user.favorites }, { $addToSet: { items: item } });
     };
+
+    await collections.products.updateOne({ _id: item }, { $inc: { popularity: 1} });
 
     if (!user.favorites || updatedFavorits && updatedFavorits.matchedCount == 0) {
         const favoritsId = await collections.favorites.insertOne({
@@ -37,7 +39,7 @@ router.delete('/', async (req, res) => {
         const userFavorits = await collections.favorites.findOne({ _id: user.favorites });
         if (userFavorits!.items.length == 1 && userFavorits!.items[0] == item) {
             await collections.favorites.deleteOne({ _id: user.favorites });
-            await collections.users.updateOne({ _id: user._id }, { $unset: { favorits: "" } });
+            await collections.users.updateOne({ _id: user._id }, { $unset: { favorites: "" } });
         } else {
             await collections.favorites.updateOne({ _id: user.favorites }, { $pull: { items: item } });
         };

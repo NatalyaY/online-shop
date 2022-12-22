@@ -64,43 +64,9 @@ export const getQuery = (params: params, req: express.Request, next: express.Nex
                                 },
                             }
                         ],
-                        // mustNot: [
-                        //     {
-                        //         range: {
-                        //             path: "amount",
-                        //             "lt": 1,
-                        //         },
-                        //     }
-                        // ]
-                    },
-                    "highlight": {
-                        "path": 'name'
                     }
                 },
             },
-            {
-                "$project": {
-                    name: 1,
-                    price: 1,
-                    salePrice: 1,
-                    image: 1,
-                    sku: 1,
-                    amount: 1,
-                    brand: 1,
-                    categoryId: 1,
-                    creationDate: 1,
-                    popularity: 1,
-                    discount: 1,
-                    _id: 1,
-                    box_height: 1,
-                    box_length: 1,
-                    box_width: 1,
-                    box_size: 1,
-                    description: 1,
-                    "highlights": { "$meta": "searchHighlights" },
-                    score: { $meta: "searchScore" }
-                }
-            }
             ];
         const autocompleteHints =
             [
@@ -217,7 +183,7 @@ export const getQuery = (params: params, req: express.Request, next: express.Nex
 
     if (price && ('' + price).split(';').length == 2) {
         const [minPrice, maxPrice] = price.split(';');
-        query['$or'] = [{ salePrice: { $lte: +maxPrice, $gte: +minPrice } }, { price: { $lte: +maxPrice, $gte: +minPrice } }]
+        query['salePrice'] = { $lte: +maxPrice, $gte: +minPrice };
     };
 
     if (inStock) {

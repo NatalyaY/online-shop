@@ -43,7 +43,7 @@ export interface ordersState extends withItems<OrderMapped["_id"]> {
 
 export type userState = UserMapped & DBStatus;
 
-interface queryParams {
+export interface queryParams {
     params: params,
     products: ProductInState[],
     qty: number,

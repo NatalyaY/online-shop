@@ -1,14 +1,13 @@
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '../../app/redux-hooks';
+import { ProductInState } from '../../../server/helpers';
 import FeaturedProducts from '../../components/Home/components/FeaturedProducts';
-import { selectProductsByIDs, fetchProductsByIDs } from '../../features/products/productsSlice';
+import useProductsByID from './../../common/hooks/useProductsByID';
 
 
-export type products = ReturnType<typeof selectProductsByIDs>;
+export type products = (ProductInState|undefined)[];
 
 
 const FeaturedProducts_container = () => {
-    const dispatch = useAppDispatch();
 
     const productIds = [
         '635a8f4f8cb47f8d76d4f614',
@@ -54,16 +53,7 @@ const FeaturedProducts_container = () => {
         '635a8f508cb47f8d76d4fdc6'
     ];
 
-    const products = useAppSelector((state) => selectProductsByIDs(state, productIds));
-
-    const filteredProducts = products.filter(prod => prod !== undefined) as NonNullable<typeof products[number]>[];
-
-    React.useEffect(() => {
-        if (filteredProducts.length !== productIds.length) {
-            const idsToFetch = productIds.filter(id => !filteredProducts.map(prod => prod._id).includes(id));
-            dispatch(fetchProductsByIDs(idsToFetch));
-        };
-    }, []);
+    const products = useProductsByID(productIds);
 
     return <FeaturedProducts products={products} />
 };

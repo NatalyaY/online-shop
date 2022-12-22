@@ -30,10 +30,10 @@ router.get('/all', fetchFromDB({ limit: false, coll: ['products'], productOption
 });
 
 router.get('/autocomplete', getQueryFromSearchParams, fetchFromDB({ coll: ['products'], autocomplete: true }), (req, res) => {
-        const data = (req as RequestCustom).fetchedData;
-        res
-            .status(200)
-            .json({ products: data.products, hints: data.hints });
+    const data = (req as RequestCustom).fetchedData;
+    res
+        .status(200)
+        .json({ products: data.products, hints: data.hints });
 });
 
 router.post('/custom/:limit?',

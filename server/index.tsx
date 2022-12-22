@@ -9,13 +9,17 @@ import gethotReload from './controllers/middleware/hotReload';
 
 import apiRoter from './controllers/router/api_router';
 import mainRoter from './controllers/router/main_router';
+import imageRouter from './controllers/router/image_router';
+
 
 const appBase = express();
 const wsInstance = expressWs(appBase);
 const { app } = wsInstance;
-const staticDir = './dist';
+const staticDir = '../dist';
 
 gethotReload(app);
+
+app.use('/img/products', imageRouter);
 
 app.use(
     cookieParser('sdhshd6esj'),
@@ -26,6 +30,7 @@ app.use(
 
 app.use('/api', apiRoter);
 app.use('/', mainRoter);
+
 
 
 app.ws('/watch', (ws, req) => {
