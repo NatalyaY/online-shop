@@ -4,6 +4,7 @@ import type { AppState } from '../../app/store';
 import { translitBrand } from '../../common/helpers/translitBrand';
 import { error, productsState } from '../../common/types';
 import getCategoryParentIds from './../../common/helpers/getCategoryParentIds';
+import unify from './../../common/helpers/unify';
 
 const initialState: productsState = {
     status: "iddle",
@@ -78,7 +79,7 @@ export const fetchProductsByIDs = createAsyncThunk<
 
 export const fetchCustomProducts = createAsyncThunk<
     NonNullable<productsState['queryParams']>[number],
-    {params: params, limit?: number},
+    { params: params, limit?: number },
     {
         rejectValue: { message: error['message'] }
     }
@@ -104,6 +105,31 @@ export const fetchCustomProducts = createAsyncThunk<
     };
 });
 
+export const fetchCustomProductsBulk = createAsyncThunk<
+    { params: params, limit?: number, result: (NonNullable<productsState['queryParams']>[number] | { error: error }) }[],
+    { params: params, limit?: number }[],
+    {
+        rejectValue: { message: error['message'] }
+    }
+>('products/fetchCustomProductsBulk', async (arg, { rejectWithValue }) => {
+    try {
+        return await Promise.all(arg.map(async (a) => {
+            const { params, limit } = a;
+            const url = limit ? `/api/products/custom/${limit}` : '/api/products/custom/';
+            const result = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8'
+                },
+                body: JSON.stringify(params)
+            });
+            return { ...a, result: await result.json() };
+        }));
+    } catch (err) {
+        return rejectWithValue({ message: (err as error).message })
+    };
+});
+
 const productsSlice = createSlice({
     name: 'products',
     initialState,
@@ -122,29 +148,47 @@ const productsSlice = createSlice({
                 state.status = 'loading';
             })
             .addCase(fetchSomeProducts.fulfilled, (state, action) => {
-                const normalizedStateProducts = JSON.parse(JSON.stringify(state.products.map(p => JSON.stringify(p))));
-                const normalizedActionProducts = action.payload.products.map(p => JSON.stringify(p));
+                const totalProducts = unify(state.products, action.payload.products);
+                state.products = totalProducts;
 
-                const products = new Set([...normalizedStateProducts, ...normalizedActionProducts]);
-                state.products = [...products].map(p => JSON.parse(p));
                 state.qty = action.payload.qty;
                 state.queryParams = state.queryParams ? [...state.queryParams, action.payload] : [action.payload];
             })
             .addCase(fetchProductsByIDs.fulfilled, (state, action) => {
-                const normalizedStateProducts = JSON.parse(JSON.stringify(state.products.map(p => JSON.stringify(p))));
-                const normalizedActionProducts = action.payload.products.map(p => JSON.stringify(p));
-
-                const products = new Set([...normalizedStateProducts, ...normalizedActionProducts]);
-                state.products = [...products];
+                const totalProducts = unify(state.products, action.payload.products);
+                state.products = totalProducts;
             })
             .addCase(fetchCustomProducts.fulfilled, (state, action) => {
-                const normalizedStateProducts = JSON.parse(JSON.stringify(state.products.map(p => JSON.stringify(p))));
-                const normalizedActionProducts = action.payload.products.map(p => JSON.stringify(p));
-
-                const products = new Set([...normalizedStateProducts, ...normalizedActionProducts]);
-                state.products = [...products];
+                const totalProducts = unify(state.products, action.payload.products);
+                state.products = totalProducts;
                 state.queryParams = state.queryParams ? [...state.queryParams, action.payload] : [action.payload];
             })
+            .addCase(fetchCustomProductsBulk.fulfilled, (state, action) => {
+                const errors = action.payload.filter((p): p is { params: params; limit?: number; result: { error: error } } => (p.result as any).error);
+                const results = action.payload.filter((p): p is { params: params; limit?: number; result: NonNullable<productsState['queryParams']>[number] } => !(p.result as any).error);
+
+                errors.forEach(payload => {
+                    const params = {
+                        params: payload.params,
+                        products: [],
+                        qty: 0,
+                        maxPrice: 0,
+                        minPrice: 0,
+                        productsBrands: [],
+                        productsCategories: [],
+                        availableBrands: [],
+                        availableCategories: [],
+                    }
+                    state.queryParams = state.queryParams ? [...state.queryParams, params] : [params];
+                });
+
+                const totalProducts = unify(state.products, ...results.map(p => p.result.products));
+                state.products = totalProducts;
+
+                results.forEach(payload => {
+                    state.queryParams = state.queryParams ? [...state.queryParams, payload.result] : [payload.result];
+                })
+            });
     }
 });
 
@@ -154,12 +198,13 @@ export default productsSlice.reducer;
 export const selectProducts = (state: AppState, filters: AppState['filters'] = state.filters, getAllProducts: boolean = false, paginaion: boolean = true) => {
     const products = state.products.products;
     const categories = state.categories;
+
     const productsQueryParam = state.products.queryParams?.find(p => {
         return JSON.stringify(Object.fromEntries(Object.entries(p.params).map(e => [e[0], "" + e[1]]).sort())) ==
             JSON.stringify(Object.fromEntries(Object.entries(filters).map(e => [e[0], "" + e[1]]).sort()))
     });
 
-    if (!productsQueryParam && (state.products.qty != undefined || filters.s || getAllProducts)) {
+    if (!productsQueryParam && ((state.products.qty != undefined && getAllProducts) || filters.s)) {
         return {
             selectedProducts: null,
             qty: null,
@@ -236,9 +281,10 @@ export const selectProducts = (state: AppState, filters: AppState['filters'] = s
         const availableBrands = [...new Set(filteredProductsWOBrand.map(p => p.brand))].sort();
 
         const sortedProducts = sortProducts(filteredProductsAllFilters, sorting || 'popular');
+        const sliced = paginaion ? sortedProducts.slice(offset, offset + onPageOrDefault) : sortedProducts;
 
         return {
-            selectedProducts: paginaion ? sortedProducts.slice(offset, offset + onPageOrDefault) : sortedProducts,
+            selectedProducts: sliced,
             qty: filteredProductsAllFilters.length,
             minPrice,
             maxPrice,

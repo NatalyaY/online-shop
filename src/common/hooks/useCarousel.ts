@@ -1,11 +1,44 @@
 import React from 'react';
 
-const useCarousel = ({ time, delay, itemsQty, dots, infinite = true }: { time: number, delay: number, itemsQty: number, dots: boolean, infinite?: boolean }) => {
+const useCarousel = ({ time, delay, itemsQty, infinite = true }: { time: number, delay: number, itemsQty: number, infinite?: boolean }) => {
     const [index, setIndex] = React.useState(0);
 
     const [isDragged, setIsDragged] = React.useState<boolean>(false);
     const [direction, setDirection] = React.useState<'left' | 'right'>('left');
     const [awaitBannerTransition, setAwaitBannerTransition] = React.useState<boolean>(false);
+    const [dotIndex, setDotIndex] = React.useState<number | null>(null);
+
+    React.useEffect(() => {
+        const awaitTransition = async (callback: () => void) => {
+            await new Promise((resolve) => { setTimeout(resolve, time) });
+            callback();
+        };
+        if (dotIndex != null) {
+            if (dotIndex < index) {
+                if (!awaitBannerTransition) {
+                    setAwaitBannerTransition(true);
+                    handleBack();
+                } else {
+                    awaitTransition(handleBack);
+                };
+            } else if (dotIndex > index) {
+                if (!awaitBannerTransition) {
+                    setAwaitBannerTransition(true);
+                    handleForward();
+                } else {
+                    awaitTransition(handleForward);
+                };
+            } else {
+                setDotIndex(null);
+                setAwaitBannerTransition(false);
+            }
+        };
+    }, [index, dotIndex]);
+
+    const handleDot = (i: number) => {
+        setDotIndex(i);
+    };
+
     let X: number | undefined;
     let movementX: number | undefined;
 
@@ -16,7 +49,7 @@ const useCarousel = ({ time, delay, itemsQty, dots, infinite = true }: { time: n
         onClick: React.MouseEventHandler<HTMLElement>,
         index: number,
         direction: "left" | "right",
-        handleDot?: (i: number) => Promise<void>,
+        handleDot: (i: number) => void,
         setIndex: (index: number) => void
     };
 
@@ -72,7 +105,7 @@ const useCarousel = ({ time, delay, itemsQty, dots, infinite = true }: { time: n
         } else {
             setIndex(index)
         }
-    }
+    };
 
     controllers = {
         handleForward,
@@ -81,41 +114,8 @@ const useCarousel = ({ time, delay, itemsQty, dots, infinite = true }: { time: n
         onClick,
         index,
         direction,
-        setIndex: handleIndexChange
-    };
-
-    if (dots) {
-        const [dotIndex, setDotIndex] = React.useState<number | null>(null);
-        React.useEffect(() => {
-            const awaitTransition = async (callback: () => void) => {
-                await new Promise((resolve) => { setTimeout(resolve, time) });
-                callback();
-            };
-            if (dotIndex != null) {
-                if (dotIndex < index) {
-                    if (!awaitBannerTransition) {
-                        setAwaitBannerTransition(true);
-                        handleBack();
-                    } else {
-                        awaitTransition(handleBack);
-                    };
-                } else if (dotIndex > index) {
-                    if (!awaitBannerTransition) {
-                        setAwaitBannerTransition(true);
-                        handleForward();
-                    } else {
-                        awaitTransition(handleForward);
-                    };
-                } else {
-                    setDotIndex(null);
-                    setAwaitBannerTransition(false);
-                }
-            };
-        }, [index, dotIndex]);
-        const handleDot = async (i: number) => {
-            setDotIndex(i);
-        };
-        controllers.handleDot = handleDot;
+        setIndex: handleIndexChange,
+        handleDot
     };
 
     return controllers;

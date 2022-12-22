@@ -2,15 +2,15 @@ import express from 'express';
 import createError from 'http-errors';
 import { RequestCustom } from '../../../helpers';
 
-
 import { collections } from '../../../db/services/db.service';
-import { UpdateResult } from 'mongodb';
+import { UpdateResult, ObjectId } from 'mongodb';
 
 
 const router = express.Router();
 
 router.post('/', async (req, res) => {
-    const { item } = req.body;
+    let { item } = req.body;
+    item = new ObjectId(item);
     const user = (req as RequestCustom).currentUser;
     if (!user) throw createError(500, `No user found`);
     let updatedCart: UpdateResult | null = null;
@@ -18,6 +18,8 @@ router.post('/', async (req, res) => {
     if (user.cart) {
         updatedCart = await collections.carts.updateOne({ _id: user.cart }, { $addToSet: { items: item } });
     };
+
+    await collections.products.updateOne({ _id: item }, { $inc: { popularity: 3 } });
 
     if (!user.cart || updatedCart && updatedCart.matchedCount == 0) {
         const cartId = await collections.carts.insertOne({

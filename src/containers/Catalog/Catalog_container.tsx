@@ -14,7 +14,7 @@ import useProductsQueryParam from './../../common/hooks/useProductsQueryParam';
 import { BrandInState, CategoryInState } from '../../../server/helpers';
 import { selectBrands } from '../../features/brands/brandsSlice';
 import compareObjects from './../../common/helpers/compareObjects';
-import { filtersState } from '../../common/types';
+import { filtersState, queryParams } from '../../common/types';
 import { useLocation } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
 
@@ -36,8 +36,8 @@ export type setFilter = (value: Parameters<(typeof filterActions)['setFilters']>
 export type clearFilter = (value: Parameters<(typeof filterActions)['clearSomeFilters']>[number]) => void;
 
 interface Props {
-    productsParamsFromServer: ReturnType<typeof useProductsQueryParam>,
-    productsParamsFromFrontend: ReturnType<typeof selectProducts>
+    fromServer?: queryParams,
+    fromFrontend: ReturnType<typeof selectProducts>
 };
 
 interface SetSearchParamsProps {
@@ -47,14 +47,17 @@ interface SetSearchParamsProps {
     setSearch: ReturnType<typeof useSearchParams>[1]
 };
 
-const useFilter = ({ productsParamsFromServer, productsParamsFromFrontend }: Props) => {
+const useFilter = ({ fromServer, fromFrontend }: Props) => {
 
     const { inStock, brand, s } = useSelector(selectFilters);
     const categories = useSelector(selectCategories);
     const brands = useSelector(selectBrands);
 
-    if (productsParamsFromServer) {
-        productsParamsFromServer.productsCategories = [...new Set(productsParamsFromServer.productsCategories.map(cat => getCategoryParentIds(cat, categories)).flat())];
+    let mappedFromServer = fromServer ? { ...fromServer } : undefined;
+
+    if (mappedFromServer) {
+        const withParents = mappedFromServer.productsCategories.map(cat => getCategoryParentIds(cat, categories));
+        mappedFromServer.productsCategories = [...new Set(withParents.flat())];
     };
 
     const getCategoriesByIds = (ids: string[] | null = null) => {
@@ -78,12 +81,14 @@ const useFilter = ({ productsParamsFromServer, productsParamsFromFrontend }: Pro
             .filter((brand): brand is BrandInState => brand !== undefined)
     };
 
+    const params = mappedFromServer || fromFrontend;
+
     const filter: filter = {
-        minPrice: productsParamsFromServer?.minPrice || productsParamsFromFrontend.minPrice,
-        maxPrice: productsParamsFromServer?.maxPrice || productsParamsFromFrontend.maxPrice,
-        productsBrands: getBrandsByNames(productsParamsFromServer?.productsBrands || productsParamsFromFrontend.productsBrands),
-        availableBrands: getBrandsByNames(productsParamsFromServer?.availableBrands || productsParamsFromFrontend.availableBrands),
-        productsCategories: getCategoriesByIds(productsParamsFromServer?.productsCategories || productsParamsFromFrontend.productsCategories),
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice,
+        productsBrands: getBrandsByNames(params.productsBrands),
+        availableBrands: getBrandsByNames(params.availableBrands),
+        productsCategories: getCategoriesByIds(params.productsCategories),
         inStock,
         brand,
         s
@@ -126,10 +131,11 @@ const Catalog_container = () => {
     const pathName = useLocation().pathname;
 
     const { categoryID, brandName, searchParams, setSearch } = useParamsFromUrl();
-    const productsParamsFromServer = useProductsQueryParam(searchParams);
 
-    const selectedProductsWithFiltersValue = useAppSelector((state) => selectProducts(state, searchParams));
-    const filter = useFilter({ productsParamsFromServer, productsParamsFromFrontend: selectedProductsWithFiltersValue });
+    const productsWithParamsFromServer = useProductsQueryParam(searchParams);
+    const productsWithParamsFromState = useAppSelector((state) => selectProducts(state, searchParams));
+
+    const filter = useFilter({ fromServer: productsWithParamsFromServer, fromFrontend: productsWithParamsFromState });
 
     const productsQty = useAppSelector((state) => state.products.qty);
     const categories = useSelector(selectCategories);
@@ -138,9 +144,10 @@ const Catalog_container = () => {
 
     const category = categories.find(c => c.UUID == categoryID);
     const brand = brands.find(b => translitBrand(b.text) == brandName);
-    const filteredProductsQty = productsParamsFromServer ? productsParamsFromServer.qty : selectedProductsWithFiltersValue.qty;
+    const filteredProductsQty = (productsWithParamsFromServer || productsWithParamsFromState).qty;
 
     const { p, onpage, sorting, price } = searchParams;
+    const { category: c, ...searchParamsWOCategory } = searchParams;
 
     const setFilter = (value: Parameters<typeof filterActions['setFilters']>[number]) => {
         dispatch(filterActions.setFilters(value));
@@ -150,18 +157,16 @@ const Catalog_container = () => {
         dispatch(filterActions.clearSomeFilters(value));
     };
 
-    const { category: c, ...searchParamsWOCategory } = searchParams;
-
     React.useEffect(() => {
-        if (!productsParamsFromServer && (productsQty !== undefined || searchParams.s)) {
+        if (!productsWithParamsFromServer && (productsQty !== undefined || searchParams.s)) {
             dispatch(fetchSomeProducts());
         };
     }, [categoryID, brandName, searchParams]);
 
     React.useEffect(() => {
-        // if (!compareObjects(filters, searchParams) && Object.keys(filters).length || (filters.s !== searchParams.s)) {
-        //     dispatch(filterActions.clearFilters());
-        // };
+        if (!compareObjects(filters, searchParams) && Object.keys(filters).length || (filters.s !== searchParams.s)) {
+            dispatch(filterActions.clearFilters());
+        };
         dispatch(filterActions.setFilters(searchParams));
     }, [categoryID, brandName, searchParams.s]);
 
@@ -172,7 +177,7 @@ const Catalog_container = () => {
     return (
         (brand || category || pathName == '/categories' || searchParams.s) &&
         <Catalog
-            products={selectedProductsWithFiltersValue.selectedProducts || new Array(onpage ? +onpage : 20).fill(null)}
+            products={productsWithParamsFromState.selectedProducts || new Array(onpage ? +onpage : 20).fill(null)}
             category={category}
             brand={brand}
             qty={filteredProductsQty}

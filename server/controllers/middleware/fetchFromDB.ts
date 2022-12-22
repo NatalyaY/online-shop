@@ -192,8 +192,8 @@ const getProductOptions = async (req: RequestCustom, query: RequestCustom['query
 
     const { page, onpage, sorting, _id, ...restQuery } = query;
 
-    const { $or, amount, ...queryWOFilters } = restQuery;
-    const { $or: o, ...queryWOPrice } = restQuery;
+    const { salePrice, amount, ...queryWOFilters } = restQuery;
+    const { salePrice: s, ...queryWOPrice } = restQuery;
     const { brand: b, ...queryWOBrand } = restQuery;
     const queryByCategory = query.categoryId ? { categoryId: query.categoryId } : {};
 

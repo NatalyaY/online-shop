@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import createError from 'http-errors';
 import { ObjectId } from "mongodb";
 import express from 'express';
-import { RequestCustom, setAuthCookie } from '../../helpers';
+import { clearAuthCookie, RequestCustom, setAuthCookie } from '../../helpers';
 import { collections } from '../../db/services/db.service';
 import User from "../../db/models/user";
 
@@ -83,7 +83,8 @@ export const attachUser = async (req: express.Request, res: express.Response, ne
     const decodedToken = (req as RequestCustom).token;
     const currentUser = await collections.users.findOne({ _id: new ObjectId(decodedToken.id) });
     if (!currentUser) {
-        return next(createError(401, 'No such user'));
+        clearAuthCookie(res);
+        res.redirect('back');
     } else {
         (req as RequestCustom).currentUser = currentUser;
         return next();

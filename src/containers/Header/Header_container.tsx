@@ -8,6 +8,7 @@ import { selectBrands } from '../../features/brands/brandsSlice';
 import { ProductInState } from '../../../server/helpers';
 
 import { useAppDispatch } from './../../app/redux-hooks';
+
 import Header from '../../components/Header/Header';
 
 export type user = ReturnType<typeof selectUser>;
@@ -24,8 +25,7 @@ export type Login = ({ phone, password }: LoginParams) => void;
 export type SignUp = ({ phone, password }: SignUpParams) => void;
 export type LogOut = () => void;
 
-
-export type GetAutocompleteProducts = (s: string) => Promise<{ products: Products | undefined, hints: ReturnType<typeof getMappedHints> | undefined, aborted: boolean  }>;
+export type GetAutocompleteProducts = (s: string) => Promise<{ products: Products | undefined, hints: ReturnType<typeof getMappedHints> | undefined, aborted: boolean }>;
 
 const getMappedHints = (hints: string[], searchValue: string) => {
     return hints.map(hint => {
@@ -73,16 +73,18 @@ const Header_container = () => {
         }
     };
 
-    return <Header
-        user={user}
-        favorits={favorits}
-        cart={cart}
-        Login={LoginFN}
-        SignUp={SignUpFN}
-        brands={brands}
-        GetAutocompleteProducts={GetAutocompleteProducts}
-        LogOut={LogOutFN}
-    />
+    return (
+        <Header
+            user={user}
+            favorits={favorits}
+            cart={cart}
+            Login={LoginFN}
+            SignUp={SignUpFN}
+            brands={brands}
+            GetAutocompleteProducts={GetAutocompleteProducts}
+            LogOut={LogOutFN}
+        />
+    )
 };
 
 export default Header_container;

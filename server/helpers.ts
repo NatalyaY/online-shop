@@ -29,7 +29,7 @@ export type fetchedData = {
 export interface query {
     categoryId?: string | { $in: string[] },
     brand?: string | { $in: string[] },
-    $or?: [{ salePrice: { $lte: number, $gte: number } }, { price: { $lte: number, $gte: number } }],
+    salePrice?: { $lte: number, $gte: number },
     amount?: { $gt: 0 },
     page?: number,
     onpage?: number,
@@ -76,6 +76,13 @@ export function setAuthCookie(res: express.Response, token: string) {
     });
 };
 
+export function clearAuthCookie(res: express.Response) {
+    res.clearCookie('token', {
+        signed: true,
+        httpOnly: true,
+    });
+};
+
 
 interface breadcrump {
     textRU: string,
@@ -93,8 +100,8 @@ export type ProductMapped = MapDbObject<Product>
 export type FavoriteMapped = MapDbObject<Favorite>
 export type CartMapped = MapDbObject<Cart>
 export type OrderMapped = MapDbObject<Order>
-export type UserMapped = Omit<MapDbObject<User>, '_id' | 'cart' | 'unauthorizedId' | 'orders' | 'favorites' | 'password'>
-export type EditUserMapped = Omit<MapDbObject<User>, '_id' | 'cart' | 'state' | 'unauthorizedId' | 'orders' | 'favorites'>
+export type UserMapped = Omit<MapDbObject<User>, '_id' | 'cart' | 'unauthorizedId' | 'orders' | 'favorites' | 'password' >
+export type EditUserMapped = Omit<MapDbObject<User>, '_id' | 'cart' | 'state' | 'unauthorizedId' | 'orders' | 'favorites' | 'viewedProducts' >
 
 
 export type ProductInState = MapDbObject<Awaited<ReturnType<typeof getProductsWithBreadCrumps>>[number]>

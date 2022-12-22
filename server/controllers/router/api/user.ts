@@ -5,6 +5,7 @@ import { ObjectId } from "mongodb";
 import { RequestCustom, setAuthCookie } from '../../../helpers';
 import { collections } from '../../../db/services/db.service';
 import { login, logout, signUp } from '../../middleware/authservice';
+import setProdViews from './../../middleware/setProdViews';
 
 
 const router = express.Router();
@@ -73,7 +74,7 @@ router.get('/logout', logout, (req, res) => {
 
 router.post('/', async (req, res) => {
     const currentUser = (req as RequestCustom).currentUser;
-    await collections.users.updateOne({ _id: new ObjectId(currentUser._id) }, req.body);
+    await collections.users.updateOne({ _id: new ObjectId(currentUser._id) }, { $set: req.body });
 
     try {
         const updatedUser = await collections.users.findOne({ _id: new ObjectId(currentUser._id) });
@@ -105,6 +106,13 @@ router.delete('/', async (req, res) => {
             .status(200)
             .json({ error: { message: message, status } });
     };
+});
+
+router.get('/setViews', setProdViews, (req, res) => {
+    const user = (req as RequestCustom).currentUser;
+    res
+        .status(200)
+        .json(user.viewedProducts);
 });
 
 export default router;

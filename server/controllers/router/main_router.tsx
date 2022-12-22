@@ -20,7 +20,6 @@ import theme from '../../../src/app/MUITheme';
 import createEmotionCache from './../middleware/emotionCache';
 
 import configureAppStore from '../../../src/app/store';
-import App from '../../../src/app/App';
 
 
 const router = express.Router();
@@ -28,7 +27,7 @@ const isProduction = process.env.NODE_ENV == 'production';
 
 router.use((req, res, next) => {
     if (!req.headers.accept?.startsWith('text/html')) {
-        return;
+        return res.status(404).end();
     };
     next();
 })
@@ -69,9 +68,7 @@ router.get('/*', async (req, res) => {
                 <ThemeProvider theme={theme}>
                     <CssBaseline />
                     <Provider store={store} >
-                        <StaticRouter location={req.url} >
-                            <App />
-                        </StaticRouter>
+                        <StaticRouter location={req.url} />
                     </Provider>
                 </ThemeProvider>
             </CacheProvider>,

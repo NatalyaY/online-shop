@@ -1,9 +1,7 @@
-
 import React from 'react';
 import { Provider } from 'react-redux'
 import { hydrateRoot, createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import App from './app/App';
+import { RouterProvider } from 'react-router-dom';
 import configureAppStore from './app/store';
 import './assets/scss/index.scss';
 
@@ -12,6 +10,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { CacheProvider } from '@emotion/react';
 import theme from './app/MUITheme';
 import createEmotionCache from '../server/controllers/middleware/emotionCache';
+import router from './app/router';
 
 const container = document.getElementById('app')!;
 
@@ -22,20 +21,18 @@ delete (window as any).__PRELOADED_STATE__
 const store = configureAppStore(preloadedState);
 const cache = createEmotionCache();
 
-function Main() {
+const Main = () => {
     return (
-        <React.StrictMode>
+        // <React.StrictMode>
             <CacheProvider value={cache}>
                 <ThemeProvider theme={theme}>
                     <CssBaseline />
                     <Provider store={store}>
-                        <BrowserRouter>
-                            <App />
-                        </BrowserRouter>
+                        <RouterProvider router={router} />
                     </Provider>
                 </ThemeProvider>
             </CacheProvider>
-        </React.StrictMode>
+        // </React.StrictMode>
     );
 }
 

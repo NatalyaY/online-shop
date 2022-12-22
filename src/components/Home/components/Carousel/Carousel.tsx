@@ -20,6 +20,9 @@ const Carousel = () => {
     const time = 300;
     const delay = time + 3000;
 
+    const img = new Image();
+    img.src = '/img/banners/aroma/img2.png';
+
     const bannersContent: Banner[] = [
         [{
             images: [{
@@ -40,7 +43,7 @@ const Carousel = () => {
             buttons: [{
                 text: 'Смотреть'
             }],
-            link: '/cat-2349-aromaterapiya',
+            link: '/categories/cat-2349-aromaterapiya',
         }],
         [{
             images: [{
@@ -51,7 +54,7 @@ const Carousel = () => {
                 title: 'Развивающие игрушки',
                 position: 'bottom',
             },
-            link: '/podarki-dlya-detey/cat-290-razvivayuschie-igrushki',
+            link: '/categories/podarki-dlya-detey/cat-290-razvivayuschie-igrushki',
             order: 1,
             orderMobile: 2,
         },
@@ -68,7 +71,7 @@ const Carousel = () => {
                 backgroundColor: '#fff',
                 color: 'text.primary'
             }],
-            link: '/cat-2510591-podarki-dlya-detey',
+            link: '/categories/cat-2510591-podarki-dlya-detey',
             order: 2,
             orderMobile: 1,
             backgroundColor: 'primary.main',
@@ -82,7 +85,7 @@ const Carousel = () => {
                 title: 'Куклы и аксессуары',
                 position: 'bottom',
             },
-            link: '/podarki-dlya-detey/cat-334-kukly-i-aksessuary',
+            link: '/categories/podarki-dlya-detey/cat-334-kukly-i-aksessuary',
             order: 3,
             orderMobile: 3,
         },
@@ -119,28 +122,28 @@ const Carousel = () => {
                     text: 'Свечи',
                     backgroundColor: '#fff',
                     color: 'text.primary',
-                    link: '/interer/cat-2745-svechi'
+                    link: '/categories/interer/cat-2745-svechi'
                 },
                 {
                     text: 'Светильники',
                     backgroundColor: '#fff',
                     color: 'text.primary',
-                    link: '/interer/cat-2527-svetilniki-i-nochniki'
+                    link: '/categories/interer/cat-2527-svetilniki-i-nochniki'
                 },
                 {
                     text: 'Фигурки с янтарем',
                     backgroundColor: '#fff',
                     color: 'text.primary',
-                    link: '/interer/cat-2788-figury-iz-latuni-s-yantarem'
+                    link: '/categories/interer/cat-2788-figury-iz-latuni-s-yantarem'
                 },
                 {
                     text: 'Шкатулки',
                     backgroundColor: '#fff',
                     color: 'text.primary',
-                    link: '/interer/cat-2448-shkatulki'
+                    link: '/categories/interer/cat-2448-shkatulki'
                 }
             ],
-            link: '/cat-2458565-interer',
+            link: '/categories/cat-2458565-interer',
             backgroundColor: '#a3c2d1'
         }]
     ];
@@ -159,7 +162,7 @@ const Carousel = () => {
     const arrowXPosition = { xs: '-10px', md: 0, lg: '10px' };
     const arrowFZ = { fontSize: { xs: 52, lg: 72 } };
 
-    const { index, direction, handleDot, handleForward, handleBack, onPointerDown, onClick } = useCarousel({ time, delay, itemsQty: bannersContent.length, dots: true })
+    const { index, direction, handleDot, handleForward, handleBack, onPointerDown, onClick } = useCarousel({ time, delay, itemsQty: bannersContent.length })
     const testimonialsOverlap = 75;
     const dotsVerticalGap = 10;
     const dotsHeight = 12;

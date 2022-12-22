@@ -1,13 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Toolbar, IconButton, Link, InputBase, IconButtonProps, Chip, ChipProps, Typography, Accordion, AccordionSummary, AccordionDetails, CircularProgress } from '@mui/material';
-import { styled, alpha } from '@mui/material/styles';
+import { styled, alpha, useTheme } from '@mui/material/styles';
 import { IMaskInput } from 'react-imask';
 import { Theme, SxProps } from '@mui/material/styles';
 
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useWindowWidth } from '../hooks/useWindowWidth';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 interface StyledIconButtonProps extends IconButtonProps {
     href?: string;
@@ -90,43 +90,55 @@ export const Logo = ({ flexible = true }) => {
 }
 
 export const ResponsiveAccordion = ({ children, title, breakpoint = 'sm', accordeonSX, accordionDetailsSX, titleSX, iconColor }: { children: React.ReactNode, title: string, breakpoint?: keyof Theme['breakpoints']['values'], accordeonSX?: SxProps, accordionDetailsSX?: SxProps, titleSX?: SxProps, iconColor?: string }) => {
+    const theme = useTheme();
+    const autoExpanded = useMediaQuery(theme.breakpoints.up(breakpoint));
 
-    type vals = {
-        accordionExpanded: boolean,
-        accordionIconVisibility: boolean
-    }
-
-    type StringLiteral<T> = T extends `${string & T}` ? T : never;
-
-
-    const up: StringLiteral<`up_${typeof breakpoint}`> = `up_${breakpoint}`;
-    const down: StringLiteral<`down_${typeof breakpoint}`> = `down_${breakpoint}`;
-
-    let variables = {
-        [up]: {
-            accordionExpanded: true,
-            accordionIconVisibility: false
-        },
-        [down]: {
-            accordionExpanded: false,
-            accordionIconVisibility: true
-        },
-    } as { [key in typeof down | typeof up]: vals };
-
-
-    const values = useWindowWidth(variables);
     const [accordionExpandedManual, setAccordionExpandedManual] = React.useState(false);
 
     const handleAccordionExpand = () => {
-        if (values.accordionExpanded) return;
+        if (autoExpanded) return;
         setAccordionExpandedManual(!accordionExpandedManual);
+    };
+
+    const accordionStyles = {
+        boxShadow: 0,
+        '&:before': { display: 'none' },
+        '&.Mui-expanded': { m: 0 },
+        ...accordeonSX
+    };
+
+    const accordionSummaryStyles = {
+        p: 0,
+        minHeight: 0,
+        '& .MuiAccordionSummary-content': { m: 0 },
+        '& .MuiAccordionSummary-content.Mui-expanded': { m: 0, pb: 1, cursor: 'text' },
+        '&.Mui-expanded': { minHeight: 0 }
+    };
+
+    const accordionTitleStyles = {
+        color: 'text.disabled',
+        fontWeight: 500,
+        ...titleSX
     };
 
 
     return (
-        <Accordion expanded={values.accordionExpanded as boolean || accordionExpandedManual} onChange={handleAccordionExpand} sx={{ boxShadow: 0, '&:before': { display: 'none' }, '&.Mui-expanded': { m: 0 }, ...accordeonSX }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ opacity: values.accordionIconVisibility ? 1 : 0, color: iconColor }} />} sx={{ p: 0, minHeight: 0, '& .MuiAccordionSummary-content': { m: 0 }, '& .MuiAccordionSummary-content.Mui-expanded': { m: 0, pb: 1, cursor: 'text' }, '&.Mui-expanded': { minHeight: 0 } }}>
-                <Typography variant="body1" component={'h6'} textTransform={'uppercase'} sx={{ color: 'text.disabled', fontWeight: 500, ...titleSX }}>{title}</Typography>
+        <Accordion
+            expanded={autoExpanded || accordionExpandedManual}
+            onChange={handleAccordionExpand}
+            sx={accordionStyles}
+        >
+            <AccordionSummary
+                expandIcon={
+                    <ExpandMoreIcon
+                        sx={{ opacity: !autoExpanded ? 1 : 0, color: iconColor }}
+                    />
+                }
+                sx={accordionSummaryStyles}
+            >
+                <Typography variant="body1" component={'h6'} textTransform={'uppercase'} sx={accordionTitleStyles}>
+                    {title}
+                </Typography>
             </AccordionSummary>
             <AccordionDetails sx={{ p: 0, ...accordionDetailsSX }}>
                 {children}

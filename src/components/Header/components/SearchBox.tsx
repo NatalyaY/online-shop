@@ -114,7 +114,7 @@ const SearchBox: React.FC<{ GetAutocompleteProducts: GetAutocompleteProducts }> 
                                     >
                                         <Box sx={{ position: 'relative', flex: '0 0 56px' }} width={56} height={56}>
                                             <Skeleton variant="rectangular" width={'100%'} height={'100%'} />
-                                            <Avatar src={product.image[0]} alt={product.name} variant='square' sx={{ width: '100%', height: '100%', position: 'absolute', left: 0, top: 0, opacity: 1 }}>
+                                            <Avatar src={`/img/products/${product._id}/100/0.webp`} alt={product.name} variant='square' sx={{ width: '100%', height: '100%', position: 'absolute', left: 0, top: 0, opacity: 1 }}>
                                                 <ImageNotSupportedIcon />
                                             </Avatar>
                                         </Box>

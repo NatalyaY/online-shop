@@ -16,7 +16,7 @@ const Brands: React.FC<{ brands: brands }> = ({ brands }) => {
 
     const time = 300;
     const delay = time + 3000;
-    const { handleBack, handleForward, carouselSettings } = getCarousel({ time, delay, dots: false, itemsQty: brands.length });
+    const { handleBack, handleForward, carouselSettings } = getCarousel({ time, delay, itemsQty: brands.length });
 
     return (
         <Container maxWidth="xl" sx={{ pb: 45 / 8 }}>

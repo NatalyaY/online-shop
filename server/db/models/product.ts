@@ -5,7 +5,7 @@ export default class Product {
         public name: string,
         public price: number,
         public salePrice: number,
-        public image: string[],
+        public imagesQty: number,
         public sku: string,
         public amount: number,
         public brand: string,
