@@ -11,7 +11,6 @@ import {
     Typography,
     Stack,
     Button,
-    Box
 } from '@mui/material';
 import { ProductInState, BrandInState, CategoryInState } from '../../../server/helpers';
 import { filter, sorting, setFilter, clearFilter, price } from '../../containers/Catalog/Catalog_container';
@@ -32,6 +31,29 @@ interface Props {
     clearFilter: clearFilter,
     price?: price,
     searchParams: filtersState
+};
+
+export const noResultsContainerStyles = (imageUrl: string) => {
+    return {
+        alignItems: 'center',
+        color: 'secondary.dark',
+        height: '100%',
+        justifyContent: 'center',
+        textAlign: 'center',
+        background: `url(${imageUrl}) center no-repeat`,
+        backgroundSize: 'contain',
+        py: 6,
+        position: 'relative',
+        '&:before': {
+            content: '""',
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#fffffffa'
+        }
+    };
 };
 
 const Catalog: React.FC<Props> =
@@ -119,27 +141,6 @@ const Catalog: React.FC<Props> =
             isMobile: !isPermanent
         };
 
-        const noResultsContainerStyles = {
-            alignItems: 'center',
-            color: 'secondary.dark',
-            height: '100%',
-            justifyContent: 'center',
-            textAlign: 'center',
-            background: 'url(/img/no-search-results.png) center no-repeat',
-            backgroundSize: 'contain',
-            py: 6,
-            position: 'relative',
-            '&:before': {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                width: '100%',
-                height: '100%',
-                backgroundColor: '#fffffffa'
-            }
-        };
-
         function handleResetFilters(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
             clearFilter('price');
             clearFilter('inStock');
@@ -163,7 +164,7 @@ const Catalog: React.FC<Props> =
                         {products.length &&
                             <ProductList products={products} key={JSON.stringify(filter)} />
                             ||
-                            <Stack sx={noResultsContainerStyles}>
+                            <Stack sx={noResultsContainerStyles('/img/no-search-results.png')}>
                                 <Typography variant='h6' zIndex={1}>
                                     По вашим параметрам ничего не нашлось. Попробуйте сбросить фильтры.
                                 </Typography>
@@ -177,7 +178,6 @@ const Catalog: React.FC<Props> =
                 </Stack>
             </Container >
         )
-
 
     };
 

@@ -126,7 +126,7 @@ const Product: React.FC<IProduct> = ({ product, brandLink, categoryLink, brandAn
     )
 };
 
-const ProductsCarousel = ({ products, type, heading }: { products: Products, type: 'similar' | 'viewed', heading: string }) => {
+export const ProductsCarousel = ({ products, type, heading }: { products: Products, type: 'similar' | 'viewed', heading: string }) => {
     const time = 300;
     const delay = time + 3000;
     const settings = getCarousel({ time, delay, itemsQty: products.length });

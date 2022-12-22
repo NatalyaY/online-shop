@@ -5,6 +5,7 @@ import Home from '../components/Home/Home';
 import Catalog_container from '../containers/Catalog/Catalog_container';
 import Product_container from '../containers/Product/Product_container';
 import NotFound from '../components/NotFound/NotFound';
+import Favorites_container from '../containers/Favorites/Favorites_container';
 
 export default createBrowserRouter(
     createRoutesFromElements(
@@ -21,7 +22,8 @@ export default createBrowserRouter(
                     '/categories/:c1/:category',
                     '/categories/:category',
                     '/categories/:c1/:c2/:c3/*',
-                    '/categories'
+                    '/categories',
+                    '/search'
                 ].map((path, i) => <Route path={path} key={i} element={<Catalog_container />} />)
             }
             {
@@ -32,7 +34,7 @@ export default createBrowserRouter(
                     '/:c1/:c2/:c3/*'
                 ].map((path, i) => <Route path={path} key={i} element={<Product_container />} />)
             }
-            <Route path="/search" element={< Catalog_container />} />
+            <Route path="/favorits" element={< Favorites_container />} />
             <Route path='*' element={< NotFound />} />
         </Route>
     )

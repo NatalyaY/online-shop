@@ -20,27 +20,30 @@ const animate = ({ timing, draw, duration }: { timing: (t: number) => number, dr
 };
 
 const ScrollTop = () => {
+
     const trigger = useScrollTrigger({
         disableHysteresis: true,
         threshold: 300,
     });
 
+    function handleClick() {
+        animate({
+            duration: 300,
+            draw(progress) {
+                window.scrollBy(0, window.scrollY * -progress);
+            },
+            timing(timeFraction) {
+                return Math.pow(timeFraction, 2);
+            }
+        })
+    }
+
     return (
         <Fade in={trigger}>
             <Box
-                onClick={() => {
-                    animate({
-                        duration: 300,
-                        draw(progress) {
-                            window.scrollBy(0, window.scrollY * -progress);
-                        },
-                        timing(timeFraction) {
-                            return Math.pow(timeFraction, 2);
-                        }
-                    })
-                }}
+                onClick={handleClick}
                 role="presentation"
-                sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1 }}
+                sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 10 }}
             >
                 <Fab size="medium" color="warning" aria-label="вернуться наверх">
                     <KeyboardArrowUpIcon />

@@ -36,19 +36,38 @@ const ProductListCard: React.FC<{ product: ProductInState }> = ({ product }) => 
         borderRadius: 'inherit',
         aspectRatio: '1',
         width: '100%',
-        objectFit : 'contain',
+        objectFit: 'contain',
         position: 'absolute',
         left: 0,
         top: 0
     };
 
+    const cardStyles = {
+        borderRadius: '10px',
+        flex: '1 1 0',
+        minWidth: minWidth,
+        '&:hover': { boxShadow: 1 },
+        opacity: product.amount > 0 ? '1' : '0.5'
+    };
+
+    const cardLinkStyles = {
+        p: 2,
+        pb: 3,
+        height: '100%',
+        borderRadius: 'inherit',
+        '&:hover .MuiCardActionArea-focusHighlight': { opacity: 0 },
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        justifyContent: 'space-between'
+    }
 
     return (
-        <Card elevation={0} sx={{ borderRadius: '10px', flex: '1 1 0', minWidth: minWidth, '&:hover': { boxShadow: 1 }, opacity: product.amount > 0 ? '1' : '0.5' }} component={'article'}>
-            <CardActionArea disableRipple={true} href={product.breadcrumps[product.breadcrumps.length - 1].link} sx={{ p: 2, pb: 3, height: '100%', borderRadius: 'inherit', '&:hover .MuiCardActionArea-focusHighlight': { opacity: 0 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Card elevation={0} sx={cardStyles} component={'article'}>
+            <CardActionArea disableRipple={true} href={product.breadcrumps[product.breadcrumps.length - 1].link} sx={cardLinkStyles}>
                 <Stack sx={{ width: '100%', aspectRatio: '1', borderRadius: 'inherit' }}>
                     <CardMedia component={'img'} src={`/img/products/${product._id}/300/0.webp`} sx={{ ...mediaStyles, ...loaderStyles }} />
-                    <Stack direction={'row'} gap={2} justifyContent={'space-between'} sx={{zIndex: 6}}>
+                    <Stack direction={'row'} gap={2} justifyContent={'space-between'} sx={{ zIndex: 6 }}>
                         <ProductLabel product={product} />
                         <AddToFavorits isAddedToFavorites={isAddedToFavorites} handleAddToFavorites={handleAddToFavorites} />
                     </Stack>
