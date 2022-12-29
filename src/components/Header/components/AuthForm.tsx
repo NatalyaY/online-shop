@@ -20,6 +20,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 import LoadingButton from '@mui/lab/LoadingButton';
 import Fade from '@mui/material/Fade';
+import PhoneField from './PhoneField';
 
 
 interface Props {
@@ -35,7 +36,6 @@ interface Props {
 const AuthForm: React.FC<Props> = ({ type, setType, Login, SignUp, user }) => {
 
     const [phone, setPhone] = React.useState('');
-    const [phoneComplete, setPhoneComplete] = React.useState(false);
     const [phoneError, setPhoneError] = React.useState(false);
 
     const [password, setPassword] = React.useState('');
@@ -50,7 +50,6 @@ const AuthForm: React.FC<Props> = ({ type, setType, Login, SignUp, user }) => {
 
     React.useEffect(() => {
         setPhone('');
-        setPhoneComplete(false);
         setPhoneError(false);
         setPassword('');
         setShowPassword(false);
@@ -87,29 +86,7 @@ const AuthForm: React.FC<Props> = ({ type, setType, Login, SignUp, user }) => {
             maxWidth: 400
         }}>
             <Typography variant='h2' sx={{ mb: 3 }}>{type == 'login' ? 'Войти' : 'Зарегистрироваться'}</Typography>
-            <TextField
-                autoComplete='tel'
-                error={phoneError}
-                id="phone"
-                name="phone"
-                label="Телефон"
-                placeholder="Телефон"
-                variant="outlined"
-                InputProps={{ inputComponent: PhoneMaskedInput as any, required: true }}
-                value={phone}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>, complete = undefined) => {
-                    if (complete != undefined) {
-                        complete && setPhoneError(false);
-                        setPhoneComplete(complete);
-                    };
-                    setPhone(e.target.value);
-                }}
-                onFocus={() => !phone && setPhone(' ')}
-                onBlur={() => {
-                    (phone != '+7' && phone != '') && !phoneComplete && setPhoneError(true);
-                    phone == '+7' && setPhone('')
-                }}
-            />
+            <PhoneField phone={phone} setPhone={setPhone} phoneError={phoneError} setPhoneError={setPhoneError} />
             <TextField
                 autoComplete='current-password'
                 id="password"

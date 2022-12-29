@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
 import { CreateAddRemoveReducers } from '../generics';
 import { UserLoginFields, userState, error } from '../../common/types';
+import { UserMapped } from '../../../server/helpers';
 
 const initialState: userState = {
     status: "iddle",
@@ -12,7 +13,7 @@ const { extraReducers, addThunk, removeThunk } = CreateAddRemoveReducers(initial
 export { addThunk as addUserFields, removeThunk as removeUserFields };
 
 export const Login = createAsyncThunk<
-    userState,
+    UserMapped,
     UserLoginFields,
     {
         rejectValue: { message: error['message'], item: UserLoginFields }
@@ -38,7 +39,7 @@ export const Login = createAsyncThunk<
 });
 
 export const SignUp = createAsyncThunk<
-    userState,
+    UserMapped,
     UserLoginFields,
     {
         rejectValue: { message: error['message'], item: UserLoginFields }
@@ -64,7 +65,7 @@ export const SignUp = createAsyncThunk<
 });
 
 export const logOut = createAsyncThunk<
-    userState,
+    UserMapped,
     undefined,
     {
         rejectValue: { message: error['message'] }
@@ -106,7 +107,12 @@ export const setViews = createAsyncThunk<
 const userSlice = createSlice({
     name: 'user',
     initialState,
-    reducers: {},
+    reducers: {
+        clearUserError: (state) => {
+            delete state.error;
+            state.status = 'iddle'
+        }
+    },
     extraReducers: (builder) => {
         extraReducers(builder);
         builder.addCase(Login.fulfilled, (state, action) => {
@@ -150,6 +156,8 @@ const userSlice = createSlice({
             })
     }
 });
+
+export const { clearUserError } = userSlice.actions;
 
 export default userSlice.reducer
 export const selectUser = (state: AppState) => state.user;

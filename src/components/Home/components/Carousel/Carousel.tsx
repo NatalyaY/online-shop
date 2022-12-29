@@ -26,7 +26,7 @@ const Carousel = () => {
     const bannersContent: Banner[] = [
         [{
             images: [{
-                src: '/img/banners/aroma/img2.png',
+                src: '/img/banners/aroma/img.png',
                 label: {
                     main: '-65%',
                     before: "'до'",

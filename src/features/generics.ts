@@ -1,19 +1,29 @@
 import { PayloadAction, CaseReducer, createAsyncThunk, ActionReducerMapBuilder, AsyncThunk } from '@reduxjs/toolkit';
-import { error, DBStatus, withItems } from '../common/types';
+import { error, DBStatus, WithItems } from '../common/types';
 import { EditUserMapped } from '../../server/helpers';
+import unify from '../common/helpers/unify';
 
 type features = 'carts' | 'favorits' | 'products' | 'user';
 
-interface DBItems<item> extends withItems<item> {
+interface DBItems<item> extends WithItems<item> {
     items?: item[]
 }
 
-function isDBUser(obj: any): obj is EditUserMapped {
-    return obj.hasOwnProperty('name')
+interface DBItemsWithqty<item> extends WithItems<item> {
+    items?: { id: item, qty: number }[]
 }
 
-function isDBItems<A>(obj: object & { lastUpdatedId?: A | '' }): obj is DBItems<A> {
-    return obj.hasOwnProperty('lastUpdatedId')
+const isDBUser = (obj: any): obj is EditUserMapped => {
+    return obj.state !== undefined
+}
+
+function isDBItems<A>(obj: object & { lastUpdatedId?: A | '', items?: (A | { id: A, qty: number })[] }): obj is DBItems<A> {
+    if (obj.hasOwnProperty('lastUpdatedId')) {
+        if (obj.items && typeof obj.items[0] != typeof obj.lastUpdatedId) return false;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 type Setters<Type> = {
@@ -24,7 +34,22 @@ type Clearers<Type> = {
     [Property in keyof Type as `clear${Capitalize<string & Property>}`]-?: CaseReducer<Type>
 };
 
-type NarrowThunk<T, A> = T extends { lastUpdatedId?: A } ? AsyncThunk<A, A, {
+type NarrowAddThunk<T, A> = T extends DBItems<A> | DBItemsWithqty<A> ?
+    AsyncThunk<A, NonNullable<T['items']>[number], {
+        rejectValue: {
+            message: error['message'];
+            item: A;
+        };
+    }>
+    :
+    AsyncThunk<EditUserMapped, EditUserMapped, {
+        rejectValue: {
+            message: error['message'];
+            item: EditUserMapped;
+        };
+    }>;
+
+type NarrowRemoveThunk<T, A> = T extends DBItems<A> | DBItemsWithqty<A> ? AsyncThunk<A, A, {
     rejectValue: {
         message: error['message'];
         item: A;
@@ -38,11 +63,13 @@ type NarrowThunk<T, A> = T extends { lastUpdatedId?: A } ? AsyncThunk<A, A, {
 
 
 type UserOrItemsWithStatus<T, A> =
-    T extends Record<string, never> ?
-    never
+    T extends Record<string, never> ? never
     : T extends DBStatus ?
-    T extends (DBItems<A> | EditUserMapped) ?
-    DBItems<A> & DBStatus | EditUserMapped & DBStatus
+    T extends DBItemsWithqty<A> ? DBItemsWithqty<A> & DBStatus
+    :
+    T extends DBItems<A> ? DBItems<A> & DBStatus
+    :
+    T extends EditUserMapped ? EditUserMapped & DBStatus
     : never
     : never
 
@@ -123,73 +150,91 @@ export function CreateAddRemoveReducers<T, A>(obj: T & UserOrItemsWithStatus<T, 
             return rejectWithValue({ message: (err as error).message, item })
         };
     });
-    const extraReducers = (builder: ActionReducerMapBuilder<typeof obj>) => builder
-        .addCase(addThunk.fulfilled, (state, action) => {
+
+    const addFulfilled: CaseReducer<
+        typeof obj,
+        PayloadAction<A, string,
+            {
+                arg: A;
+                requestId: string;
+                requestStatus: "fulfilled";
+            }, never
+        >>
+        =
+        (state, action) => {
             if (isDBUser(state)) {
-                const data = action.payload;
-                typedKeys(data as EditUserMapped).forEach(key => {
-                    state[key] = (data as EditUserMapped)[key]
+                const data = action.payload as EditUserMapped;
+                typedKeys(data).forEach(key => {
+                    state[key] = data[key];
                 });
+            } else {
+                let items = state.items || [];
+                const { id } = action.meta.arg as any;
+                if (isDBItems(state)) {
+                    (items as typeof action.meta.arg[]) = unify((items as typeof action.meta.arg[]), [action.meta.arg]);
+                } else {
+                    const index = (items as NonNullable<typeof state.items>).findIndex(i => i.id == id);
+                    if (index !== -1) {
+                        (items as typeof action.meta.arg[])[index] = action.meta.arg;
+                    } else {
+                        (items as typeof action.meta.arg[]).push(action.meta.arg);
+                    };
+                };
+                state.items = items;
+                (state.lastUpdatedId as typeof action.meta.arg) = id || action.meta.arg;
             };
             state.status = 'succeeded';
             return state
-        })
-        .addCase(addThunk.rejected, (state, action) => {
-            state.status = 'failed';
-            state.error = action.payload ? action.payload.message : action.error.message;
-            if (isDBItems(state)) {
-                if (state.items && state.items.length && action.payload !== undefined) {
-                    const IDToRemove = action.payload.item;
-                    (state.items as A[]) = (state.items as A[]).filter(id =>
-                        id !== IDToRemove
-                    );
-                };
-            };
-            return state
-        })
-        .addCase(addThunk.pending, (state, action) => {
-            if (isDBItems(state)) {
-                const items = state.items ? state.items : [];
-                (items as typeof action.meta.arg[]).push(action.meta.arg);
-                state.items = items;
-                (state.lastUpdatedId as typeof action.meta.arg) = action.meta.arg;
-            };
-            state.status = 'loading';
-            delete state.error;
-            return state
-        })
-        .addCase(removeThunk.fulfilled, (state, action) => {
+        };
+
+    const removeFulfilled: CaseReducer<
+        typeof obj,
+        PayloadAction<A, string, {
+            arg: A;
+            requestId: string;
+            requestStatus: "fulfilled";
+        }, never>>
+        = (state, action) => {
             if (isDBUser(state)) {
                 const data = action.payload;
                 typedKeys(data as EditUserMapped).forEach(key => {
                     delete state[key as keyof typeof state]
                 });
+            } else {
+                if (state.items && state.items.length) {
+                    (state.items as A[]) = (state.items as A[]).filter(item => {
+                        const idInState = (item as any).id || item;
+                        return idInState !== action.meta.arg;
+                    });
+                };
+                (state.lastUpdatedId as typeof action.meta.arg) = action.meta.arg;
             };
             state.status = 'succeeded';
             return state;
+        };
+
+    const extraReducers = (builder: ActionReducerMapBuilder<typeof obj>) => builder
+        .addCase(addThunk.fulfilled, addFulfilled)
+        .addCase(removeThunk.fulfilled, removeFulfilled)
+        .addCase(addThunk.rejected, (state, action) => {
+            state.status = 'failed';
+            state.error = action.payload ? action.payload.message : action.error.message;
+            return state
         })
         .addCase(removeThunk.rejected, (state, action) => {
             state.status = 'failed';
             state.error = action.payload ? action.payload.message : action.error.message;
-            if (isDBItems(state)) {
-                const items = state.items ? state.items : [];
-                (items as typeof action.meta.arg[]).push(action.meta.arg);
-                state.items = items;
-            };
-            return state;
+            return state
         })
-        .addCase(removeThunk.pending, (state, action) => {
-            if (isDBItems(state)) {
-                if (state.items && state.items.length) {
-                    (state.items as A[]) = (state.items as A[]).filter(id =>
-                        id !== action.meta.arg
-                    );
-                };
-                (state.lastUpdatedId as typeof action.meta.arg) = action.meta.arg;
-            };
+        .addCase(addThunk.pending, (state, action) => {
             state.status = 'loading';
             delete state.error;
-            return state;
+            return state
         })
-    return { addThunk: addThunk as NarrowThunk<T, A>, removeThunk: removeThunk as NarrowThunk<T, A>, extraReducers: extraReducers as (builder: ActionReducerMapBuilder<T>) => ActionReducerMapBuilder<T> }
+        .addCase(removeThunk.pending, (state, action) => {
+            state.status = 'loading';
+            delete state.error;
+            return state
+        })
+    return { addThunk: addThunk as NarrowAddThunk<T, A>, removeThunk: removeThunk as NarrowRemoveThunk<T, A>, extraReducers: extraReducers as (builder: ActionReducerMapBuilder<T>) => ActionReducerMapBuilder<T> }
 }

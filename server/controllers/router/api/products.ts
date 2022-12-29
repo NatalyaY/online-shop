@@ -2,6 +2,7 @@ import express from 'express';
 import { RequestCustom } from '../../../helpers';
 import getQueryFromSearchParams, { getQuery } from '../../middleware/queryFromParams';
 import fetchFromDB from '../../middleware/fetchFromDB';
+import { customProducts } from './requestTypes';
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ router.get('/autocomplete', getQueryFromSearchParams, fetchFromDB({ coll: ['prod
 });
 
 router.post('/custom/:limit?',
-    (req, res, next) => getQuery(req.body, req, next),
+    (req: customProducts, res, next) => getQuery(req.body, req, next),
     (req, res, next) => fetchFromDB({ limit: req.params.limit ? +req.params.limit : false, coll: ['products'], productOptions: false })(req, res, next),
     sendResults);
 
