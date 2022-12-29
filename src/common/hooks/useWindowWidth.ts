@@ -10,14 +10,23 @@ type OneOrMoreProperties<Union extends string, Value> = {
 
 type Params<T> = OneOrMoreProperties<`${compare}_${breakpoint}`, { [K in keyof T[keyof T]]: T[keyof T][keyof T[keyof T]] }>;
 
-function useDebouncedFunction(func: Function, delay: number) {
+export function useDebouncedFunctionwithState(func: Function, delay: number) {
     const [timerId, setTimerId] = React.useState<NodeJS.Timeout | null>(null);
 
-    return () => {
+    return (...args: any[]) => {
         timerId && clearTimeout(timerId);
-        setTimerId(setTimeout(() => func(...arguments), delay));
+        setTimerId(setTimeout(() => func(...args), delay));
     };
-}
+};
+
+export function useDebouncedFunction(func: Function, delay: number) {
+    let timerId: NodeJS.Timeout | null = null;
+
+    return (...args: any[]) => {
+        timerId && clearTimeout(timerId);
+        timerId = setTimeout(() => func(...args), delay);
+    };
+};
 
 export function useWindowWidth<T extends Params<T>>(variables: T) {
     const theme = useTheme();

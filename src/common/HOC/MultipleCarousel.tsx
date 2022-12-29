@@ -192,6 +192,7 @@ export const MultipleCarousel: React.FC<MultipleCarouselProps> = ({ children, sx
                     height: 0,
                 },
             }}
+            className={'carousel'}
             ref={ref}
             onDragStart={onDragStart}
             onPointerDown={onPointerDown}

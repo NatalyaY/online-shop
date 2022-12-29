@@ -1,11 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
-import { error, ordersState, newOrder, OrderMapped } from '../../common/types';
-const initialState: ordersState = {};
+import { error, ordersState, NewOrder, OrderMapped } from '../../common/types';
+const initialState: ordersState = {
+    status: "iddle",
+    lastUpdatedId: ''
+};
 
 export const CreateOrder = createAsyncThunk<
     OrderMapped,
-    newOrder,
+    NewOrder,
     {
         rejectValue: { message: error['message'] }
     }
@@ -29,24 +32,43 @@ export const CreateOrder = createAsyncThunk<
     };
 });
 
-
 const ordersSlice = createSlice({
     name: 'orders',
     initialState,
-    reducers: {},
+    reducers: {
+        clearOrdersError: (state) => {
+            delete state.error;
+            state.status = 'iddle'
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(CreateOrder.fulfilled, (state, action) => {
                 if (state.orders) {
                     state.orders.push(action.payload);
-                    state.lastUpdatedId = action.payload._id;
                 } else {
                     state.orders = [action.payload];
-                    state.lastUpdatedId = action.payload._id;
                 };
+                state.lastUpdatedId = action.payload.UUID;
+                state.status = 'succeeded';
+                return state;
+            })
+            .addCase(CreateOrder.pending, (state, action) => {
+                state.status = 'loading';
+                delete state.error;
+                return state
+            })
+            .addCase(CreateOrder.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload?.message || action.error.message;
+                return state;
             })
     }
 });
 
+export const { clearOrdersError } = ordersSlice.actions;
+
 export default ordersSlice.reducer
 export const selectOrders = (state: AppState) => state.orders.orders;
+export const selectOrdersState = (state: AppState) => state.orders;
+

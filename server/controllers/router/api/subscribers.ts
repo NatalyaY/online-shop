@@ -2,10 +2,11 @@ import express from 'express';
 import createError from 'http-errors';
 
 import { collections } from '../../../db/services/db.service';
+import { newSubscriber } from './requestTypes';
 
 const router = express.Router();
 
-router.post('/', async (req, res, next) => {
+router.post('/', async (req: newSubscriber, res, next) => {
     const { email } = req.body;
     if (!email) {
         return next(createError(500, "Не указан email"));
@@ -18,7 +19,7 @@ router.post('/', async (req, res, next) => {
     if (!sudscriberID.insertedId) {
         return next(createError(500, "Внутренняя ошибка"));
     };
-    res.json({});
+    res.status(200).end();
 });
 
 export default router;

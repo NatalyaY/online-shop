@@ -35,16 +35,29 @@ router.use((req, res, next) => {
 router.use(getQueryFromSearchParams, fetchFromDB());
 
 router.get('/*', async (req, res) => {
-    const { products, productsQty, favorites, cart, productsBrands, productsCategories, minPrice, maxPrice, availableBrands, availableCategories, ...data } = (req as RequestCustom).fetchedData;
+    const {
+        products,
+        productsQty,
+        favorites,
+        cart,
+        productsBrands,
+        productsCategories,
+        minPrice,
+        maxPrice,
+        availableBrands,
+        availableCategories,
+        orders,
+        ...data } = (req as RequestCustom).fetchedData;
     const currentUser = (req as RequestCustom).currentUser;
-    const { _id, cart:c, unauthorizedId, orders, favorites:f, password, ...user } = currentUser;
+    const { _id, cart: c, unauthorizedId, orders: o, favorites: f, password, ...user } = currentUser;
 
     try {
         const state = {
             ...data,
-            favorits: { ...{items: favorites?.items}, status: 'iddle', lastUpdatedId: '' },
+            favorits: { ...{ items: favorites?.items }, status: 'iddle', lastUpdatedId: '' },
             cart: { ...{ items: cart?.items }, status: 'iddle', lastUpdatedId: '' },
-            user: {...user, status: 'iddle'},
+            orders: { ...{ orders: orders }, status: 'iddle', lastUpdatedId: '' },
+            user: { ...user, status: 'iddle' },
             products: {
                 products,
                 qty: productsQty,

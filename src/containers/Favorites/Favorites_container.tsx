@@ -6,7 +6,7 @@ import { selectFavorits } from '../../features/favorits/favoritsSlice';
 import useProductsByID from './../../common/hooks/useProductsByID';
 import { OverloadedReturnType } from '../../common/types';
 
-export type products = OverloadedReturnType<typeof useProductsByID>;
+export type products = OverloadedReturnType<typeof useProductsByID, [ReturnType<typeof selectFavorits>['items']]>;
 
 const Favorites_container: React.FC<{}> = () => {
 
