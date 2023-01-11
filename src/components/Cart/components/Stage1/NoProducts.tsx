@@ -7,6 +7,9 @@ import { viewedProducts } from '../../../../containers/Cart/Cart_container';
 const NoProducts: React.FC<{ viewedProducts: viewedProducts; }> = ({ viewedProducts }) => {
     return (
         <>
+            <Typography variant="h1">
+                Корзина
+            </Typography>
             <Stack sx={noResultsContainerStyles('/img/no-cart.png')}>
                 <Typography variant='h6' sx={{ fontWeight: 600, zIndex: 1 }}>Корзина пуста</Typography>
                 <Typography sx={{ zIndex: 1 }}>

@@ -41,7 +41,9 @@ export type ordersState = WithItems<OrderMapped["_id"]> & DBStatus & {
     orders?: OrderMapped[]
 };
 
-export type userState = UserMapped & DBStatus;
+export type userState = UserMapped & DBStatus & {
+    lastUpdatedFields?: string[],
+};
 
 export interface queryParams {
     params: params,
@@ -61,13 +63,18 @@ export interface productsState extends DBStatus {
     products: ProductInState[]
 };
 
-export interface NewOrder extends Omit<OrderMapped, 'status' | 'UUID' | '_id'> {};
+export interface NewOrder extends Omit<OrderMapped, 'status' | 'UUID' | '_id' | 'creationDate'> { };
 
 export { OrderMapped };
 
 export type UserLoginFields = {
     phone: User['phone'],
     password: User['password'],
+};
+
+export type UserChangePasswordFields = {
+    currentPassword: NonNullable<User['password']>,
+    newPassword: NonNullable<User['password']>
 };
 
 export type OverloadedReturnType<T extends (...args: any[]) => any, ARGS_T> =

@@ -1,58 +1,39 @@
 import express from 'express';
 import createError from 'http-errors';
 import { ObjectId } from "mongodb";
+import argon2 from 'argon2';
 
-import { RequestCustom, setAuthCookie, UserMapped } from '../../../helpers';
+import { RequestCustom, UserMapped } from '../../../helpers';
 import { collections } from '../../../db/services/db.service';
 import { login, logout, signUp } from '../../middleware/authservice';
 import setProdViews from './../../middleware/setProdViews';
-import { userAddOrRemoveFields, userLoginOrSignUp } from './requestTypes';
+import { userAddOrRemoveFields, userChangePassword, userLogin } from './requestTypes';
+import fetchFromDB from './../../middleware/fetchFromDB';
 
 
 const router = express.Router();
 
-router.post('/login', async (req: userLoginOrSignUp, res, next) => {
-    const { phone, password } = req.body;
-    if (!phone || !password) {
-        return next(createError(400, 'Не введен логин или пароль'));
-    };
-    try {
-        const { user, token } = await login((req as RequestCustom).currentUser, phone, password);
-        if (user) {
-            const { _id, cart, unauthorizedId, orders, favorites, password, ...rest } = user;
-            setAuthCookie(res, token);
-            res
-                .status(200)
-                .json(rest as UserMapped);
-        } else {
-            return next(createError(500, 'No user created'))
-        }
-    } catch (error) {
-        const message = error instanceof Error || createError.isHttpError(error) ? error.message : (error as string);
-        next(createError(500, message));
-    };
+router.post('/login', login, fetchFromDB({ coll: ['cart', 'favorites', 'orders'] }), (req: userLogin, res) => {
+    const currentUser = (req as RequestCustom).currentUser;
+    const { _id, cart: c, unauthorizedId, orders: o, favorites: f, password, ...rest } = currentUser;
+    const { cart, favorites, orders } = (req as RequestCustom).fetchedData;
+    res
+        .status(200)
+        .json({
+            cart: { ...{ items: cart?.items }, status: 'iddle', lastUpdatedId: '' },
+            favorits: { ...{ items: favorites?.items }, status: 'iddle', lastUpdatedId: '' },
+            orders: { ...{ orders: orders }, status: 'iddle', lastUpdatedId: '' },
+            user: rest as UserMapped
+        });
+
 });
 
-router.post('/signUp', async (req: userLoginOrSignUp, res, next) => {
-    const { phone, password } = req.body;
-    if (!phone || !password) {
-        return next(createError(400, 'Не введен логин или пароль'));
-    };
-    try {
-        const { user, token } = await signUp((req as RequestCustom).currentUser, phone, password);
-        if (user) {
-            const { _id, cart, unauthorizedId, orders, favorites, password, ...rest } = user;
-            setAuthCookie(res, token);
-            res
-                .status(200)
-                .json(rest as UserMapped);
-        } else {
-            return next(createError(500, 'No user created'))
-        }
-    } catch (error) {
-        const message = error instanceof Error || createError.isHttpError(error) ? error.message : (error as string);
-        next(createError(500, message));
-    };
+router.post('/signUp', signUp, (req, res) => {
+    const currentUser = (req as RequestCustom).currentUser;
+    const { _id, cart, unauthorizedId, orders, favorites, password, ...rest } = currentUser;
+    res
+        .status(200)
+        .json(rest);
 });
 
 router.get('/logout', logout, (req, res) => {
@@ -72,6 +53,34 @@ router.post('/', async (req: userAddOrRemoveFields, res, next) => {
         res
             .status(200)
             .json(item);
+    } catch (error) {
+        console.log(error);
+        const message = error instanceof Error || createError.isHttpError(error) ? error.message : (error as string);
+        next(createError(500, message));
+    };
+});
+
+router.post('/changePassword', async (req: userChangePassword, res, next) => {
+    const currentUser = (req as RequestCustom).currentUser;
+    const { currentPassword, newPassword } = req.body;
+
+    try {
+        if (!currentUser.password) {
+            return next(createError(500, `У пользователя ${currentUser.phone} не найден пароль`));
+        };
+        const isPasswordCorrect = await argon2.verify(currentUser.password, currentPassword);
+        if (!isPasswordCorrect) {
+            return next(createError(400, 'Неверный пароль'));
+        };
+        const isPasswordTheSame = await argon2.verify(currentUser.password, newPassword);
+        if (isPasswordTheSame) {
+            return next(createError(400, 'Новый пароль не должен совпадать со старым'));
+        };
+        const hashed = await argon2.hash(newPassword);
+        await collections.users.updateOne({ _id: currentUser._id }, { $set: { password: hashed } });
+        res
+            .status(200)
+            .json({})
     } catch (error) {
         const message = error instanceof Error || createError.isHttpError(error) ? error.message : (error as string);
         next(createError(500, message));

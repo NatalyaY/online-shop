@@ -4,15 +4,26 @@ import { orderedProduct } from './CartTYP';
 
 const ProductInCartTYP: React.FC<{ product: orderedProduct; }> = ({ product }) => {
     const { product: p, id, qty, salePrice } = product;
+    const styles = {
+        display: 'flex',
+        gap: 2,
+        py: 2,
+        px: 3,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'space-between',
+        minWidth: '200px',
+        flexShrink: '0'
+    }
     return (
-        <Paper component={'article'} key={id} sx={{ display: 'flex', gap: 2, width: '350px', py: 2, px: 3, flexShrink: 0 }}>
+        <Paper component={'article'} key={id} sx={styles}>
             {p ?
                 <>
-                    <Link href={p.breadcrumps[p.breadcrumps.length - 1].link} flex={'0'} className='woUnderline'>
+                    <Link href={p.breadcrumps[p.breadcrumps.length - 1].link} flex={'0'} className='woUnderline' display={'flex'}>
                         <img src={`/img/products/${p._id}/100/${0}.webp`} style={{ objectFit: 'contain' }} />
                     </Link>
-                    <Stack gap={2} justifyContent={'space-between'}>
-                        <Stack>
+                    <Stack gap={2} justifyContent={'center'}>
+                        <Stack maxWidth={'150px'}>
                             <Typography variant='h6' sx={{ whiteSpace: 'normal' }}>{p.name}</Typography>
                             <Typography variant='h6' sx={{ whiteSpace: 'normal', color: 'secondary.light' }}>
                                 {p.brand}

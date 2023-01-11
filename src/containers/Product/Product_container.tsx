@@ -43,12 +43,6 @@ const Product_container = () => {
     let similar = useSimilar(product);
     let recommended = useRecommended(product);
 
-    if (similar[0] !== null) {
-        similar = (similar as ProductInState[]).filter(p =>
-            viewedProducts.findIndex(s => s ? s._id == p._id : -1) == -1
-        );
-    };
-
     if (recommended[0] !== null) {
         recommended = (recommended as ProductInState[]).filter(p =>
             similar.findIndex(s => s ? s._id == p._id : -1) == -1

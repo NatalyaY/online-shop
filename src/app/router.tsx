@@ -7,6 +7,7 @@ import Product_container from '../containers/Product/Product_container';
 import NotFound from '../components/NotFound/NotFound';
 import Favorites_container from '../containers/Favorites/Favorites_container';
 import Cart_container from '../containers/Cart/Cart_container';
+import User_container from '../containers/User/User_container';
 
 export default createBrowserRouter(
     createRoutesFromElements(
@@ -37,7 +38,13 @@ export default createBrowserRouter(
             }
             <Route path="/favorits" element={< Favorites_container />} />
             <Route path="/cart" element={< Cart_container />} />
-
+            {
+                [
+                    '/my',
+                    '/my/details',
+                    '/my/orders',
+                ].map((path, i) => <Route path={path} key={i} element={<User_container />} />)
+            }
             <Route path='*' element={< NotFound />} />
         </Route>
     )

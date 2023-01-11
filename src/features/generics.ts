@@ -1,5 +1,5 @@
 import { PayloadAction, CaseReducer, createAsyncThunk, ActionReducerMapBuilder, AsyncThunk } from '@reduxjs/toolkit';
-import { error, DBStatus, WithItems } from '../common/types';
+import { error, DBStatus, WithItems, userState } from '../common/types';
 import { EditUserMapped } from '../../server/helpers';
 import unify from '../common/helpers/unify';
 
@@ -69,7 +69,7 @@ type UserOrItemsWithStatus<T, A> =
     :
     T extends DBItems<A> ? DBItems<A> & DBStatus
     :
-    T extends EditUserMapped ? EditUserMapped & DBStatus
+    T extends EditUserMapped ? userState
     : never
     : never
 
@@ -229,11 +229,17 @@ export function CreateAddRemoveReducers<T, A>(obj: T & UserOrItemsWithStatus<T, 
         .addCase(addThunk.pending, (state, action) => {
             state.status = 'loading';
             delete state.error;
+            if (isDBUser(state)) {
+                state.lastUpdatedFields = Object.keys(action.meta.arg as EditUserMapped);
+            }
             return state
         })
         .addCase(removeThunk.pending, (state, action) => {
             state.status = 'loading';
             delete state.error;
+            if (isDBUser(state)) {
+                state.lastUpdatedFields = Object.keys(action.meta.arg as EditUserMapped);
+            }
             return state
         })
     return { addThunk: addThunk as NarrowAddThunk<T, A>, removeThunk: removeThunk as NarrowRemoveThunk<T, A>, extraReducers: extraReducers as (builder: ActionReducerMapBuilder<T>) => ActionReducerMapBuilder<T> }

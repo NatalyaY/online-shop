@@ -136,7 +136,7 @@ export const ProductsCarousel = ({ products, type, heading }: { products: Produc
             <Typography variant='h2'>{heading}</Typography>
             {
                 products.length ?
-                    <CarouselOrList products={products} settings={settings} />
+                    <CarouselOrList products={products} settings={settings} productKey={type} />
                     :
                     <Typography>Нет похожих товаров</Typography>
             }
@@ -145,7 +145,7 @@ export const ProductsCarousel = ({ products, type, heading }: { products: Produc
     )
 };
 
-const CarouselOrList = ({ products, settings }: { products: Products, settings: ReturnType<typeof getCarousel> }) => {
+const CarouselOrList = ({ products, settings, productKey }: { products: Products, settings: ReturnType<typeof getCarousel>, productKey?: string }) => {
     const arrowStyles = {
         position: 'absolute',
         top: '50%',
@@ -155,6 +155,8 @@ const CarouselOrList = ({ products, settings }: { products: Products, settings: 
         fontSize: '48px'
     };
 
+    const key = productKey || 'featured';
+
     return (
         products.length > 5 &&
         <>
@@ -162,7 +164,9 @@ const CarouselOrList = ({ products, settings }: { products: Products, settings: 
             <MultipleCarousel settings={settings.carouselSettings}>
                 {
                     products.map((product, i) =>
-                        product && <ProductListCard key={product._id + '_featured'} product={product} /> || <ProductSkeleton key={i} />
+                        product &&
+                        <ProductListCard key={product._id + key} product={product} />
+                        || <ProductSkeleton key={i} />
                     )
 
                 }
@@ -188,7 +192,7 @@ export const ProductPageSkeleton = () => {
             <Breadcrumbs aria-label="breadcrumb">
                 {breadcrumps}
             </Breadcrumbs>
-            <Skeleton variant='text' sx={(theme) => { return { fontSize: theme.typography.h1, transform: 'none'  } }} width='60%' />
+            <Skeleton variant='text' sx={(theme) => { return { fontSize: theme.typography.h1, transform: 'none' } }} width='60%' />
             <Stack direction={'row'} gap={4} justifyContent={'center'}>
                 <ProductImageBlockSkeleton />
                 <Stack sx={rightPageAreaStyles}>
@@ -207,7 +211,7 @@ export const ProductPageSkeleton = () => {
                             </Stack>
                         </Stack>
                         <Stack gap={1} width='100%' alignItems={'center'}>
-                            <Skeleton variant='text' width={'70%'} sx={{ transform: 'none'}}/>
+                            <Skeleton variant='text' width={'70%'} sx={{ transform: 'none' }} />
                             <Skeleton variant='text' width={'70%'} sx={{ transform: 'none' }} />
                             <Skeleton variant='text' width={'70%'} sx={{ transform: 'none' }} />
                         </Stack>

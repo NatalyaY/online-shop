@@ -11,7 +11,7 @@ interface ICheckoutFormProps {
     userData: UserData,
     setIsValid: React.Dispatch<React.SetStateAction<boolean>>,
     setValidatedContacts: setValidatedContacts,
-    error: userState['error']
+    error: userState['error'],
 }
 
 const CheckoutForm: React.FC<ICheckoutFormProps> = ({ userData, setIsValid, setValidatedContacts, error }) => {
@@ -22,16 +22,15 @@ const CheckoutForm: React.FC<ICheckoutFormProps> = ({ userData, setIsValid, setV
     const [name, setName] = React.useState(userData.name || '');
 
     const [address, setAddress] = React.useState(userData.address || '');
-    const [addressError, setAddressError] = React.useState<boolean>(false);
 
     React.useEffect(() => {
-        if (phone != '' && phone != '+7' && address != '' && !phoneError && !addressError) {
+        if (phone != '' && phone != '+7' && address != '' && !phoneError) {
             setIsValid(true);
             setValidatedContacts({ phone, address, ...(email !== '' ? { email } : {}), ...(name !== '' ? { name } : {}) })
         } else {
             setIsValid(false);
         }
-    }, [phone, phoneError, address, addressError]);
+    }, [phone, phoneError, address]);
 
     function handleEmailChange() {
         return function (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) {
@@ -53,7 +52,7 @@ const CheckoutForm: React.FC<ICheckoutFormProps> = ({ userData, setIsValid, setV
                 value={email}
                 label="email"
                 sx={{ flex: '1 0 30%', minWidth: '200px' }} />
-            <FieldWithHints type={'address'} value={address} setValue={setAddress} error={addressError} setError={setAddressError} />
+            <FieldWithHints type={'address'} value={address} setValue={setAddress} />
             {error &&
                 <Fade in={true}>
                     <Alert severity="error" sx={{ flexBasis: '100%' }}>
@@ -69,39 +68,37 @@ interface IFieldWithHintsProps {
     type: 'name' | 'address',
     value: string,
     setValue: React.Dispatch<React.SetStateAction<string>>,
-    error?: boolean | null,
-    setError?: React.Dispatch<React.SetStateAction<boolean>>
+    autofocus?: boolean
 }
 
-const FieldWithHints: React.FC<IFieldWithHintsProps> = ({ type, value, setValue, error, setError }) => {
-    const [valueHasChanged, setValueHasChanged] = React.useState(false);
+export const FieldWithHints: React.FC<IFieldWithHintsProps> = ({ type, value, setValue, autofocus }) => {
+    const [hintClicked, setHintClicked] = React.useState(false);
 
     const [hints, setHints] = React.useState<{ value: string, data: { [k: string]: string } }[] | null>(null);
 
+    const fetchHints = (value: string) => {
+        fetch(`/api/${type}/${value}`)
+            .then(resp => resp.json())
+            .then(data => {
+                const suggestions: any[] = data.suggestions;
+                setHints(suggestions);
+            });
+    };
+
     function handleChange() {
         return function (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) {
+            setHintClicked(false);
             const normalizedValue = type == 'name' ? e.target.value.replace(/\d/g, "") : e.target.value;
             const encodedValue = encodeURIComponent(normalizedValue);
             setValue(normalizedValue);
-            if (type == 'address' && setError && !error) {
-                setError(true);
-            };
-            normalizedValue !== "" && fetch(`/api/${type}/${encodedValue}`)
-                .then(resp => resp.json())
-                .then(data => {
-                    const suggestions: any[] = data.suggestions;
-                    setHints(suggestions);
-                });
+            normalizedValue !== "" && fetchHints(encodedValue);
         };
     };
 
     function handleBlur() {
         return function (e: React.FocusEvent<HTMLDivElement, Element>) {
-            if (e.relatedTarget?.closest('ul') !== ref.current) {
+            if (e.relatedTarget?.closest('ul') !== ref.current && e.relatedTarget !== inputRef.current) {
                 setHints(null);
-                if (type == 'address') {
-                    setValueHasChanged(true);
-                };
             };
         };
     };
@@ -109,37 +106,80 @@ const FieldWithHints: React.FC<IFieldWithHintsProps> = ({ type, value, setValue,
     function handleHintClick(hint: { value: string, data: { [k: string]: string } }) {
         return function () {
             setValue(hint.value);
-            if (hint.data.flat || type == 'name') {
+            setHintClicked(true);
+            if (hint.data.house || type == 'name') {
                 setHints(null);
-                setError && setError(false);
             } else {
-                setError && setError(true);
+                const value = encodeURIComponent(hint.value + ' ');
+                fetchHints(value);
             };
         };
     };
 
+    React.useEffect(() => {
+        if (type == 'address' && inputRef.current && hintClicked) {
+            inputRef.current.focus();
+            inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+        }
+    }, [value, hintClicked])
+
     const ref = React.useRef<HTMLUListElement>(null);
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
 
     const label = type == 'name' ? 'Имя' : 'Адрес';
     const autoComplete = type == 'name' ? 'given-name' : 'street-address';
 
     return (
-        <Stack sx={{ position: 'relative', flex: type == 'address' ? '1 0 100%' : '1 0 30%' }} onBlur={handleBlur()}>
+        <Stack sx={{ position: 'relative', flex: type == 'address' ? '1 0 100%' : '1 0 30%', minWidth: '200px' }} onBlur={handleBlur()}>
             <TextField
                 autoComplete={autoComplete}
-                error={valueHasChanged ? error || false : false}
                 id={type}
                 name={type}
                 onChange={handleChange()}
                 placeholder={label}
                 value={value}
-                label={label} />
+                label={label}
+                inputRef={inputRef}
+                autoFocus={autofocus}
+            />
             {
                 hints &&
-                <List ref={ref} sx={{ position: 'absolute', width: '100%', left: 0, top: '100%', gap: 2, background: 'white', zIndex: 10 }}>
+                <List
+                    ref={ref}
+                    sx={{
+                        position: 'absolute',
+                        width: '100%',
+                        left: 0,
+                        top: '100%',
+                        gap: 2,
+                        background: 'white',
+                        zIndex: 10,
+                        boxShadow: 1,
+                        borderRadius: '0 0 10px 10px',
+                        maxHeight: '150px',
+                        overflowY: 'auto',
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#007580 transparent',
+                        p: 0,
+                        '&::-webkit-scrollbar': {
+                            width: '4px'
+                        },
+                        '&::-webkit-scrollbar-track': {
+                            background: 'transparent'
+                        },
+
+                        '&::-webkit-scrollbar-thumb': {
+                            background: '#007580'
+                        },
+
+                    }}>
                     {
                         hints.map(h =>
-                            <MenuItem key={h.value} onClick={handleHintClick(h)}>{h.value}</MenuItem>
+                            h.value !== value &&
+                            <MenuItem key={h.value} onClick={handleHintClick(h)} sx={{ whiteSpace: 'normal' }}>
+                                {h.value}
+                            </MenuItem>
                         )
                     }
                 </List>

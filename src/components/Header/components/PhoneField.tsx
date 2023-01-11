@@ -28,7 +28,7 @@ const PhoneField: React.FC<{ phone: string, setPhone: React.Dispatch<React.SetSt
                 (phone != '+7' && phone != '') && !phoneComplete && setPhoneError(true);
                 phone == '+7' && setPhone('')
             }}
-            sx={{flex: '1 0 30%'}}
+            sx={{flex: '1 0 30%', minWidth: '200px'}}
         />
     )
 }

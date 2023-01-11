@@ -2,11 +2,13 @@ import * as dotenv from "dotenv";
 import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import createError from 'http-errors';
-import { ObjectId } from "mongodb";
+import { Collection, ObjectId, WithId } from "mongodb";
 import express from 'express';
 import { clearAuthCookie, RequestCustom, setAuthCookie } from '../../helpers';
 import { collections } from '../../db/services/db.service';
 import User from "../../db/models/user";
+import unify from "../../../src/common/helpers/unify";
+import { userLogin, userSignUp } from "../router/api/requestTypes";
 
 dotenv.config();
 
@@ -20,31 +22,74 @@ function generateJWT(id: ObjectId) {
     return jwt.sign({ id }, signature, { expiresIn: expiration });
 };
 
-const mergeCartAndFavorits = async (unauthorizedUser: User, autorizedUser: User) => {
-    if (unauthorizedUser.favorites) {
-        const unauthorizedUserFavorits = await collections.favorites.findOne({ _id: new ObjectId(unauthorizedUser.favorites) });
-        if (unauthorizedUserFavorits?.items) {
-            const autorizedUserFavorits = await collections.favorites.findOne({ _id: new ObjectId(autorizedUser.favorites) });
-            const concatedFavorits = unauthorizedUserFavorits.items;
-            if (autorizedUserFavorits?.items) {
-                concatedFavorits.push(...autorizedUserFavorits.items)
-            };
-            await collections.favorites.updateOne({ _id: new ObjectId(autorizedUser.favorites) }, { $set: { items: concatedFavorits }});
-        };
-        await collections.favorites.deleteOne({ _id: new ObjectId(unauthorizedUser.favorites) });
+const mergeFavoritsAndCart = async ({ unauthorized, autorized }: { unauthorized: User, autorized: User }) => {
+    const favorites = {
+        un: await collections.favorites.findOne({ _id: unauthorized.favorites }),
+        aut: await collections.favorites.findOne({ _id: autorized.favorites }),
+        merged: undefined,
+        type: 'favorites' as 'favorites'
     };
-    if (unauthorizedUser.cart) {
-        const unauthorizedUserCart = await collections.carts.findOne({ _id: new ObjectId(unauthorizedUser.cart) });
-        if (unauthorizedUserCart?.items) {
-            const autorizedUserCart = await collections.carts.findOne({ _id: new ObjectId(autorizedUser.cart) });
-            const concatedCart = unauthorizedUserCart.items;
-            if (autorizedUserCart?.items) {
-                concatedCart.push(...autorizedUserCart.items)
-            };
-            await collections.carts.updateOne({ _id: new ObjectId(autorizedUser.cart) }, { $set: {items: concatedCart} });
+    const carts = {
+        un: await collections.carts.findOne({ _id: unauthorized.cart }),
+        aut: await collections.carts.findOne({ _id: autorized.cart }),
+        merged: undefined,
+        type: 'carts' as 'carts'
+    };
+
+    favorites.merged = unify(favorites.un?.items || [], favorites.aut?.items || []) as any;
+    const filteredUnCart = carts.un?.items.filter(item => {
+        const index = carts.aut?.items.findIndex(i => i.id.toString() == item.id.toString());
+        if (index == -1) {
+            return true
+        }
+    }) || []
+    carts.merged = [...carts.aut?.items || []].concat(filteredUnCart) as any;
+
+    if (favorites.un?.items) {
+        if (favorites.aut?.items) {
+            await collections.favorites.updateOne({ _id: autorized.favorites }, { $set: { items: favorites.merged } });
+            await collections.favorites.deleteOne({ _id: unauthorized.favorites });
+        } else {
+            await collections.favorites.insertOne({
+                userId: autorized._id!,
+                items: favorites.un.items
+            });
+        }
+    };
+
+    if (carts.un?.items) {
+        if (carts.aut?.items) {
+            await collections.carts.updateOne({ _id: autorized.cart }, { $set: { items: carts.merged } });
+            await collections.carts.deleteOne({ _id: unauthorized.cart });
+        } else {
+            await collections.carts.insertOne({
+                userId: autorized._id!,
+                items: carts.un.items
+            });
+        }
+    };
+
+}
+
+const mergeItems = async (unauthorizedUser: User, autorizedUser: User) => {
+
+    await mergeFavoritsAndCart({ unauthorized: unauthorizedUser, autorized: autorizedUser })
+
+    if (unauthorizedUser.orders) {
+        if (autorizedUser.orders) {
+            await collections.users.updateOne({ _id: autorizedUser._id! }, { $push: { orders: { $each: unauthorizedUser.orders } } });
+        } else {
+            await collections.users.updateOne({ _id: autorizedUser._id! }, { $set: { orders: unauthorizedUser.orders } });
         };
-        await collections.carts.deleteOne({ _id: new ObjectId(unauthorizedUser.cart) });
-    }
+    };
+
+    if (unauthorizedUser.viewedProducts) {
+        if (autorizedUser.viewedProducts) {
+            await collections.users.updateOne({ _id: autorizedUser._id! }, { $push: { viewedProducts: { $each: unauthorizedUser.viewedProducts } } });
+        } else {
+            await collections.users.updateOne({ _id: autorizedUser._id! }, { $set: { viewedProducts: unauthorizedUser.viewedProducts } });
+        };
+    };
 };
 
 const createUnauthorizedUser = async () => {
@@ -62,7 +107,13 @@ export const isAuth = async (req: express.Request, res: express.Response, next: 
     const signature = process.env.JWT_SIGNATURE;
     if (!signature) return next(createError(500, 'JWT_SIGNATURE is undefined'));
     if (!req.signedCookies.token) {
-        const { token } = await createUnauthorizedUser();
+        let token: string;
+
+        try {
+            token = (await createUnauthorizedUser()).token;
+        } catch (error) {
+            return next(error);
+        };
         setAuthCookie(res, token);
         try {
             (req as RequestCustom).token = jwt.verify(token, signature) as RequestCustom['token'];
@@ -92,66 +143,89 @@ export const attachUser = async (req: express.Request, res: express.Response, ne
 };
 
 
-/**
- * It takes an unauthorized user, a phone number and a password, finds the authorized user with the
- * given phone number, checks if the password is correct, merges the unauthorized user's cart and
- * favorites with the authorized user's, and returns the authorized user and a token
- * @param {User} unauthorizedUser - User - the user who is not authorized
- * @param phone - NonNullable<User['phone']>
- * @param password - NonNullable<User['password']>
- * @returns { user: User | null, token: string }
- */
-export const login = async (unauthorizedUser: User, phone: NonNullable<User['phone']>, password: NonNullable<User['password']>) => {
+
+export const login = async (req: userLogin, res: express.Response, next: express.NextFunction) => {
+    const { phone, password } = req.body;
+    const unauthorizedUser = (req as RequestCustom).currentUser;
+
+    if (!phone || !password) {
+        return next(createError(400, 'Не введен логин или пароль'));
+    };
+
     const autorizedUser = await collections.users.findOne({ phone });
     if (!autorizedUser) {
-        throw createError(400, `Пользователь '${phone}' не найден`);
+        return next(createError(400, `Пользователь ${phone} не найден`));
     };
     if (!autorizedUser.password) {
-        throw createError(500, `У пользователя '${phone}' не найден пароль`);
+        return next(createError(500, `У пользователя ${phone} не найден пароль`));
     };
     const correctPassword = await argon2.verify(autorizedUser.password, password);
     if (!correctPassword) {
-        throw createError(400, `Неверный пароль`);
+        return next(createError(400, `Неверный пароль`));
     };
 
-    await mergeCartAndFavorits(unauthorizedUser, autorizedUser);
+    await mergeItems(unauthorizedUser, autorizedUser);
 
-    if (!autorizedUser.unauthorizedId || !autorizedUser.unauthorizedId.includes(unauthorizedUser._id!)) {
-        autorizedUser.unauthorizedId ? autorizedUser.unauthorizedId.push(unauthorizedUser._id!) : [unauthorizedUser._id!];
+    await collections.users.updateOne({ _id: autorizedUser._id }, { $addToSet: { unauthorizedId: unauthorizedUser._id! } });
+
+    const updateUnauthorizedDoc = {
+        favorites: '' as '',
+        cart: '' as '',
+        viewedProducts: '' as '',
+        orders: '' as '',
     };
-    const updateUnauthorizedDoc: Partial<User> = {
-        favorites: undefined,
-        cart: undefined
-    };
-    await collections.users.updateOne({ _id: new ObjectId(unauthorizedUser._id) }, { $set: updateUnauthorizedDoc });
-    // fetch user again because cart and favorites could be merged with unauthorized and so changed since first fetch
-    return { user: await collections.users.findOne({ _id: new ObjectId(autorizedUser._id) }), token: generateJWT(autorizedUser._id) };
+
+    await collections.users.updateOne({ _id: new ObjectId(unauthorizedUser._id) }, { $unset: updateUnauthorizedDoc });
+
+    const token = generateJWT(autorizedUser._id);
+    setAuthCookie(res, token);
+
+    (req as RequestCustom).currentUser = autorizedUser;
+    return next();
 };
 
-export const signUp = async (unauthorizedUser: User, phone: NonNullable<User['phone']>, password: NonNullable<User['password']>) => {
+export const signUp = async (req: userSignUp, res: express.Response, next: express.NextFunction) => {
+    const { phone, password } = req.body;
+    if (!phone || !password) {
+        return next(createError(400, 'Не введен логин или пароль'));
+    };
+    const unauthorizedUser = (req as RequestCustom).currentUser;
+
     const existingUser = await collections.users.findOne({ phone });
     if (existingUser) {
-        throw createError(500, `Такой пользователь уже существует`);
+        return next(createError(500, `Такой пользователь уже существует`));
     };
     const passwordHashed = await argon2.hash(password);
     const autorizedUserDoc: User = {
         state: 'authorized',
         phone: phone,
         password: passwordHashed,
-        favorites: unauthorizedUser.favorites,
-        cart: unauthorizedUser.cart,
-        unauthorizedId: [unauthorizedUser._id!]
+        unauthorizedId: [unauthorizedUser._id!],
+        ...(unauthorizedUser.favorites ? { favorites: unauthorizedUser.favorites } : {}),
+        ...(unauthorizedUser.cart ? { cart: unauthorizedUser.cart } : {}),
+        ...(unauthorizedUser.viewedProducts ? { viewedProducts: unauthorizedUser.viewedProducts } : {}),
+        ...(unauthorizedUser.orders ? { orders: unauthorizedUser.orders } : {}),
     };
-    const updateUnauthorizedDoc: Partial<User> = {
-        favorites: undefined,
-        cart: undefined
+
+    const updateUnauthorizedDoc = {
+        favorites: '' as '',
+        cart: '' as '',
+        viewedProducts: '' as '',
+        orders: '' as '',
     };
-    await collections.users.updateOne({ _id: new ObjectId(unauthorizedUser._id) }, {$set: updateUnauthorizedDoc});
+
+    await collections.users.updateOne({ _id: new ObjectId(unauthorizedUser._id) }, { $unset: updateUnauthorizedDoc });
     const autorizedUserId = await collections.users?.insertOne(autorizedUserDoc);
-    if (!autorizedUserId) {
-        throw createError(500, `Error while creating user in DB`);
+    const autorizedUser = await collections.users.findOne({ _id: new ObjectId(autorizedUserId.insertedId) });
+
+    if (!autorizedUserId || !autorizedUser) {
+        return next(createError(500, `Error while creating user in DB`));
     };
-    return { user: await collections.users.findOne({ _id: new ObjectId(autorizedUserId.insertedId) }), token: generateJWT(autorizedUserId.insertedId) };
+    const token = generateJWT(autorizedUserId.insertedId);
+    setAuthCookie(res, token);
+
+    (req as RequestCustom).currentUser = autorizedUser;
+    return next();
 };
 
 export const logout = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -160,9 +234,13 @@ export const logout = async (req: express.Request, res: express.Response, next: 
     const unauthorizedUserID = currentUser.unauthorizedId ? currentUser.unauthorizedId[currentUser.unauthorizedId.length - 1] : null;
     let token, userId;
     if (!unauthorizedUserID) {
-        const newUser = await createUnauthorizedUser();
-        userId = newUser.userId;
-        token = newUser.token;
+        try {
+            const newUser = await createUnauthorizedUser();
+            userId = newUser.userId;
+            token = newUser.token;
+        } catch (error) {
+            return next(error);
+        };
     } else {
         token = generateJWT(unauthorizedUserID);
         userId = unauthorizedUserID;

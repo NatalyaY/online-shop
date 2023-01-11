@@ -1,7 +1,6 @@
 import express from 'express';
 
 import { collections } from '../../db/services/db.service';
-import Product from './../../db/models/product';
 const ObjectId = require('mongodb').ObjectId;
 import { translitBrand } from './../../../src/common/helpers/translitBrand';
 
