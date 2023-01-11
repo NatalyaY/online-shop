@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
 import { error, ordersState, NewOrder, OrderMapped } from '../../common/types';
+import { Login, logOut } from './../user/userSlice';
 const initialState: ordersState = {
     status: "iddle",
     lastUpdatedId: ''
@@ -63,6 +64,12 @@ const ordersSlice = createSlice({
                 state.error = action.payload?.message || action.error.message;
                 return state;
             })
+        builder.addCase(Login.fulfilled, (state, action) => {
+            return action.payload.orders;
+        })
+        builder.addCase(logOut.fulfilled, (state, action) => {
+            return initialState;
+        })
     }
 });
 

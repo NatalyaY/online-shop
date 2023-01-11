@@ -3,6 +3,7 @@ import type { AppState } from '../../app/store';
 import { CreateAddRemoveReducers } from '../generics';
 import { cartState } from '../../common/types';
 import { CreateOrder } from './../orders/ordersSlice';
+import { Login, logOut } from './../user/userSlice';
 
 const initialState: cartState = {
     status: "iddle",
@@ -29,6 +30,12 @@ const cartSlice = createSlice({
                     return { ...initialState, status: 'succeeded', items: newItems }
                 };
             }
+        });
+        builder.addCase(Login.fulfilled, (state, action) => {
+            return action.payload.cart;
+        })
+        builder.addCase(logOut.fulfilled, (state, action) => {
+            return initialState;
         })
     }
 });

@@ -87,7 +87,7 @@ const Header: React.FC<Props> = ({ user, favorits, cart, Login, SignUp, brands, 
     };
 
     const handleUserMenuClose = () => {
-        setUserMenuAnchorEl(null)
+        setUserMenuAnchorEl(null);
     };
 
     const ref = React.useRef<HTMLDivElement>(null);
@@ -142,7 +142,14 @@ const Header: React.FC<Props> = ({ user, favorits, cart, Login, SignUp, brands, 
                                 </Badge>
                             </StyledIconButton>
                             <StyledIconButton href="my"
-                                onClick={(e) => { (user.state == 'unauthorized') && e.preventDefault(); setAuthOpened(true) }}
+                                onClick={(e) => {
+                                    if (user.state == 'unauthorized') {
+                                        e.preventDefault();
+                                        setAuthOpened(true);
+                                    } else {
+                                        setUserMenuAnchorEl(null)
+                                    }
+                                }}
                                 onMouseEnter={(e) => {
                                     (e.currentTarget as HTMLElement).focus();
                                     !(e.target as HTMLElement).closest('.MuiPopover-root') && setUserMenuAnchorEl(e.currentTarget as HTMLElement);
@@ -154,6 +161,7 @@ const Header: React.FC<Props> = ({ user, favorits, cart, Login, SignUp, brands, 
                                     anchorEl={userMenuAnchorEl}
                                     open={userMenuOpen}
                                     sx={{ zIndex: '1800', pointerEvents: 'none' }}
+                                    disableScrollLock
                                     PaperProps={{
                                         sx: {
                                             overflow: 'visible',
@@ -174,6 +182,15 @@ const Header: React.FC<Props> = ({ user, favorits, cart, Login, SignUp, brands, 
                                                 top: '-20px',
                                                 zIndex: 1800,
                                                 opacity: userMenuAnchorEl ? 1 : 0
+                                            },
+                                            '&:after': {
+                                                content: "''",
+                                                position: 'absolute',
+                                                right: '0',
+                                                top: 0,
+                                                width: '100%',
+                                                height: '25px',
+                                                transform: 'translateY(-100%)',
                                             }
                                         },
                                         onClick: (e) => e.stopPropagation()

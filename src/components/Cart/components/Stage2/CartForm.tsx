@@ -106,7 +106,7 @@ const CartForm: React.FC<ICartFormProps> = ({ products, setStage, user, editUser
                     <Summary
                         {...{
                             products,
-                            stage: 1,
+                            stage: 2,
                             handleSummaryBtnClick,
                             isDisabled: isSummaryBtnDisabled,
                             isLoading: isSummaryBtnLoading,

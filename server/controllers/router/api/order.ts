@@ -21,7 +21,8 @@ router.post('/', async (req: newOrder, res, next) => {
         status: "Новый" as "Новый",
         contacts: { ...contacts, _id: user._id },
         UUID,
-        items: items.map(i => { return { ...i, id: new ObjectId(i.id) } })
+        items: items.map(i => { return { ...i, id: new ObjectId(i.id) } }),
+        creationDate: Date.now(),
     };
 
     try {

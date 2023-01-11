@@ -25,8 +25,8 @@ export interface UserData {
     address?: userState['address']
 };
 
-export type editUserData = ({ name, email, phone, address }: UserData) => void;
-export type createOrder = ({ items, contacts }: NewOrder) => void;
+export type editUserData = (fieldsToUpdate: UserData) => void;
+export type createOrder = (order: NewOrder) => void;
 
 export type OrderContacts = NewOrder['contacts'];
 
@@ -40,21 +40,17 @@ const Cart_container: React.FC = () => {
 
     const orders = useSelector(selectOrdersState);
 
-    const editUserData = ({ name, email, phone, address }: UserData) => dispatch(addUserFields({ name, email, phone, address }));
+    const editUserData = (fieldsToUpdate: UserData) => dispatch(addUserFields(fieldsToUpdate));
     const unsetUserError = () => dispatch(clearUserError());
     const unsetOrderError = () => dispatch(clearOrdersError());
 
-    const createOrder: createOrder =
-        ({ items, contacts, totalPrice, totalSalePrice, totalDiscount }: NewOrder) =>
-            dispatch(CreateOrder({ items, contacts, totalPrice, totalSalePrice, totalDiscount }));
+    const createOrder: createOrder = (order: NewOrder) => dispatch(CreateOrder(order));
 
     const cart = useSelector(selectCart);
     const cartItems = cart.items;
     const cartStatus = { status: cart.status, lastId: cart.lastUpdatedId };
     const products: products = useProductsByID<NonNullable<typeof cartItems>[number]>(cartItems as any);
     const viewedProducts: viewedProducts = useProductsByID(user.viewedProducts as any);
-
-    console.log(clearUserError);
 
     const props = {
         productsWithQty: products,

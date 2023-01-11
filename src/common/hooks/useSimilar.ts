@@ -2,10 +2,11 @@ import React from 'react';
 import { ProductInState } from '../../../server/helpers';
 import { useAppSelector } from '../../app/redux-hooks';
 import useProductsQueryParam from './useProductsQueryParam';
-import { selectProducts, fetchCustomProductsBulk } from './../../features/products/productsSlice';
+import { selectProducts, fetchCustomProductsBulk, fetchCustomProducts } from './../../features/products/productsSlice';
 import { useAppDispatch } from './../../app/redux-hooks';
 import unify from './../helpers/unify';
 import { queryParams } from '../types';
+import compareObjects from '../helpers/compareObjects';
 
 const getQueries = (product?: ProductInState) => {
     const reg = `^([A-ZА-Я][а-яa-z]+(\\-[а-яa-z]+)*)(\\s+[a-zа-я]+)*`;
@@ -65,6 +66,13 @@ const useSimilar = (product?: ProductInState) => {
     React.useEffect(() => {
         if (!productsFromServer.length) {
             dispatch(fetchCustomProductsBulk(query));
+            return;
+        };
+        if (productsFromServer.length != params.length) {
+            const missingQuery = params.find(param => productsFromServer.findIndex(p => compareObjects(p.params, param)) == -1);
+            if (missingQuery) {
+                dispatch(fetchCustomProducts({ params: missingQuery, limit: 50 }));
+            };
         };
     }, [product?._id]);
 

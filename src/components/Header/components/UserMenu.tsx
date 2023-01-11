@@ -37,10 +37,10 @@ const UserMenu: React.FC<Props> = ({ handleClose, setAuthOpened, setAuthType, us
         return (
             <MenuList>
                 <MenuItem sx={{ p: 0, pb: 2, '&:hover': { backgroundColor: 'transparent' } }} divider={true}>
-                    <Link href="my" onClick={handleClose} sx={{ display: 'flex', gap: 2, alignItems: 'center' }} className='woUnderline'>
+                    <Link href="my/details" onClick={handleClose} sx={{ display: 'flex', gap: 2, alignItems: 'center' }} className='woUnderline'>
                         <Avatar><PermIdentityRoundedIcon /></Avatar>
                         <Box>
-                            <Typography variant="body1" component={'p'} sx={{ fontWeight: 600 }}>{user.name || 'Имя не указано'}</Typography>
+                            <Typography variant="body1" component={'p'} sx={{ fontWeight: 600, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || 'Имя не указано'}</Typography>
                             <Typography variant="body1" component={'p'}>{user.phone}</Typography>
                             <Typography variant="body1" component={'p'} sx={{ color: 'primary.main', fontWeight: 600 }}>Личные данные</Typography>
                         </Box>

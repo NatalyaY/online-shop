@@ -38,6 +38,7 @@ const Sorting: React.FC<Props> = ({ isMobile, setOpen, open, onpage, setFilter, 
             </Select>
             <Select
                 value={sorting}
+                onOpen={() => document.body.style.overflow = 'auto'}
                 onChange={(e) => setFilter({ sorting: e.target.value as sorting })}
                 variant={isMobile ? 'standard' : 'outlined'}
                 sx={{ '& .MuiSelect-select': { py: 1 } }}

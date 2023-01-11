@@ -101,7 +101,7 @@ export type FavoriteMapped = MapDbObject<Favorite>
 export type CartMapped = MapDbObject<Cart>
 export type OrderMapped = MapDbObject<Order>
 export type UserMapped = Omit<MapDbObject<User>, '_id' | 'cart' | 'unauthorizedId' | 'orders' | 'favorites' | 'password' >
-export type EditUserMapped = Omit<MapDbObject<User>, '_id' | 'cart' | 'state' | 'unauthorizedId' | 'orders' | 'favorites' | 'viewedProducts' >
+export type EditUserMapped = Omit<MapDbObject<User>, '_id' | 'cart' | 'state' | 'unauthorizedId' | 'orders' | 'favorites' | 'viewedProducts' | 'password' >
 
 
 export type ProductInState = MapDbObject<Awaited<ReturnType<typeof getProductsWithBreadCrumps>>[number]>

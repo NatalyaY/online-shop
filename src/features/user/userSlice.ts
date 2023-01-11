@@ -1,7 +1,7 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppState } from '../../app/store';
 import { CreateAddRemoveReducers } from '../generics';
-import { UserLoginFields, userState, error } from '../../common/types';
+import { UserLoginFields, userState, error, cartState, favoritesState, ordersState, UserChangePasswordFields } from '../../common/types';
 import { UserMapped } from '../../../server/helpers';
 
 const initialState: userState = {
@@ -13,7 +13,7 @@ const { extraReducers, addThunk, removeThunk } = CreateAddRemoveReducers(initial
 export { addThunk as addUserFields, removeThunk as removeUserFields };
 
 export const Login = createAsyncThunk<
-    UserMapped,
+    { user: UserMapped, cart: cartState, favorits: favoritesState, orders: ordersState },
     UserLoginFields,
     {
         rejectValue: { message: error['message'], item: UserLoginFields }
@@ -35,6 +35,32 @@ export const Login = createAsyncThunk<
         };
     } catch (err) {
         return rejectWithValue({ message: (err as error).message, item })
+    };
+});
+
+export const ChangePassword = createAsyncThunk<
+    undefined,
+    UserChangePasswordFields,
+    {
+        rejectValue: { message: error['message'] }
+    }
+>('user/ChangePassword', async (fields, { rejectWithValue }) => {
+    try {
+        const response = await fetch('/api/user/changePassword', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify(fields)
+        });
+        const responseData = await response.json();
+        if (responseData.error) {
+            return rejectWithValue({ message: (responseData.error as error).message })
+        } else {
+            return responseData;
+        };
+    } catch (err) {
+        return rejectWithValue({ message: (err as error).message })
     };
 });
 
@@ -90,7 +116,7 @@ export const setViews = createAsyncThunk<
     {
         rejectValue: { message: error['message'] }
     }
-    >('user/setViews', async (_, { rejectWithValue }) => {
+>('user/setViews', async (_, { rejectWithValue }) => {
     try {
         const response = await fetch("/api/user/setViews");
         const responseData = await response.json();
@@ -116,7 +142,7 @@ const userSlice = createSlice({
     extraReducers: (builder) => {
         extraReducers(builder);
         builder.addCase(Login.fulfilled, (state, action) => {
-            const data = action.payload;
+            const data = action.payload.user;
             return { ...data, status: 'succeeded' }
         })
             .addCase(Login.rejected, (state, action) => {
@@ -153,6 +179,18 @@ const userSlice = createSlice({
             })
             .addCase(setViews.fulfilled, (state, action) => {
                 state.viewedProducts = action.payload;
+            })
+            .addCase(ChangePassword.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+            })
+            .addCase(ChangePassword.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload ? action.payload.message : action.error.message;
+            })
+            .addCase(ChangePassword.pending, (state, action) => {
+                state.status = 'loading';
+                state.lastUpdatedFields = Object.keys(action.meta.arg);
+                delete state.error
             })
     }
 });

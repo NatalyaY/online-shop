@@ -30,8 +30,8 @@ router.use('/address', addressRouter);
 
 
 router.use((error: Error | createError.HttpError, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const message = createError.isHttpError(error) ? error.message : 'Непредвиденная ошибка';
     const status = createError.isHttpError(error) ? error.statusCode : 500;
+    const message = (createError.isHttpError(error) && status !== 500) ? error.message : 'Непредвиденная ошибка';
     res
         .status(200)
         .json({ error: { message: message, status } });
