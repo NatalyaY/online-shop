@@ -1,5 +1,6 @@
 import * as mongoDB from "mongodb";
 import * as dotenv from "dotenv";
+
 import User from "./../models/user";
 import Category from "./../models/category";
 import Product from "./../models/product";

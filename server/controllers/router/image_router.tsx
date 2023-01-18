@@ -12,18 +12,22 @@ type extension = typeof extensions[number];
 const sendFallBack = (res: express.Response) => res.status(200).sendFile(`${indexPath}/no_img.jpg`);
 
 router.get('/:id/:w/:number.:ext', async (req, res) => {
-    const { w: width, id, ext, number } = req.params;
+    let { w: width, id, ext, number } = req.params;
     const filePath = `${indexPath}/${id}/original_${number}.jpeg`;
 
     if (isNaN(+width) || isNaN(+number) || !extensions.includes(ext as any)) {
         return sendFallBack(res);
     };
 
+    if (ext == 'webp' && (!req.headers.accept || req.headers.accept.indexOf('image/webp') == -1)) {
+        ext = 'jpg';
+    };
+
     try {
         const sharpStream = sharp(filePath)
             .resize({ width: +width })
             .toFormat((ext as extension), { quality: 80 })
-            .toBuffer()
+            .toBuffer();
         res.type(ext).send(await sharpStream);
     } catch (error) {
         return sendFallBack(res);

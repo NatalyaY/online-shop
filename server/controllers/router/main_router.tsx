@@ -1,30 +1,27 @@
+import React from 'react';
 import express from 'express';
 import path from 'path';
 import * as fs from 'node:fs/promises';
-
-import { RequestCustom } from '../../helpers';
-import getQueryFromSearchParams from './../middleware/queryFromParams';
-import fetchFromDB from './../middleware/fetchFromDB';
-
-
-import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { StaticRouter } from "react-router-dom/server";
 import { Provider } from 'react-redux';
-
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { CacheProvider } from '@emotion/react';
 import createEmotionServer from '@emotion/server/create-instance';
+
+import { RequestCustom } from '../../helpers';
+import getQueryFromSearchParams from './../middleware/queryFromParams';
+import fetchFromDB from './../middleware/fetchFromDB';
 import theme from '../../../src/app/MUITheme';
 import createEmotionCache from './../middleware/emotionCache';
-
 import configureAppStore from '../../../src/app/store';
 
 
 const router = express.Router();
 const isProduction = process.env.NODE_ENV == 'production';
 
+// if req is not for html and no static files were found before return 404
 router.use((req, res, next) => {
     if (!req.headers.accept?.startsWith('text/html')) {
         return res.status(404).end();
@@ -32,9 +29,7 @@ router.use((req, res, next) => {
     next();
 })
 
-router.use(getQueryFromSearchParams, fetchFromDB());
-
-router.get('/*', async (req, res) => {
+router.get('/*', getQueryFromSearchParams, fetchFromDB(), async (req, res) => {
     const {
         products,
         productsQty,
@@ -48,8 +43,21 @@ router.get('/*', async (req, res) => {
         availableCategories,
         orders,
         ...data } = (req as RequestCustom).fetchedData;
-    const currentUser = (req as RequestCustom).currentUser;
-    const { _id, cart: c, unauthorizedId, orders: o, favorites: f, password, ...user } = currentUser;
+    const { _id, cart: c, unauthorizedId, orders: o, favorites: f, password, ...user } = (req as RequestCustom).currentUser;
+    const queryParams = [
+        {
+            params: (req as RequestCustom).reqParams,
+            products,
+            qty: productsQty,
+            productsBrands,
+            productsCategories,
+            minPrice,
+            maxPrice,
+            availableBrands,
+            availableCategories
+        }
+    ];
+
 
     try {
         const state = {
@@ -61,7 +69,7 @@ router.get('/*', async (req, res) => {
             products: {
                 products,
                 qty: productsQty,
-                queryParams: [{ params: (req as RequestCustom).reqParams, products, qty: productsQty, productsBrands, productsCategories, minPrice, maxPrice, availableBrands, availableCategories }],
+                queryParams,
                 status: 'iddle'
             }
         };

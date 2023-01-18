@@ -12,7 +12,7 @@ interface Item {
     price: Product['price'],
     salePrice: Product['salePrice'],
     discount: Product['discount']
-}
+};
 
 export default class Order {
     constructor(

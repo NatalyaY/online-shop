@@ -171,7 +171,11 @@ const Catalog_container = () => {
     }, [categoryID, brandName, searchParams.s]);
 
     React.useEffect(() => {
-        setSearchParams({ filters, brandName, searchParamsWOCategory, setSearch });
+        let filtersToSetParams = filters;
+        if (!compareObjects(filters, searchParams) && Object.keys(filters).length || (filters.s !== searchParams.s)) {
+            filtersToSetParams = {};
+        };
+        setSearchParams({ filters: filtersToSetParams, brandName, searchParamsWOCategory, setSearch });
     }, [filters, searchParamsWOCategory]);
 
     return (
