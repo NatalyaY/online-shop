@@ -77,6 +77,18 @@ const Footer: React.FC<{ Subscribe: Subscribe }> = ({ Subscribe }) => {
         }
     };
 
+    const contactButtonProps = {
+        target: '_blank',
+        LinkComponent: 'a' as 'a',
+        sx: {
+            border: '1px solid transparent',
+            '&:hover': {
+                borderColor: 'primary.dark',
+                color: 'primary.dark'
+            }
+        }
+    };
+
 
     return (
         <AppBar position="relative" sx={{ boxShadow: 0, backgroundColor: 'background.paper' }} component={'footer'}>
@@ -86,16 +98,16 @@ const Footer: React.FC<{ Subscribe: Subscribe }> = ({ Subscribe }) => {
                     <Stack gap={1} order={1} sx={{ flex: 0, width: '100%', flexDirection: { xs: 'row', sm: 'column' }, justifyContent: 'space-between' }}>
                         <Logo flexible={false} />
                         <Stack direction={'row'} ml={-1}>
-                            <IconButton aria-label="ВК" sx={{ border: '1px solid transparent', '&:hover': { borderColor: 'primary.dark', color: 'primary.dark' } }}>
+                            <IconButton aria-label="ВК" {...contactButtonProps} href={'https://vk.com/'}>
                                 <VKIcon fontSize='small' />
                             </IconButton>
-                            <IconButton aria-label="Viber" sx={{ border: '1px solid transparent', '&:hover': { borderColor: 'primary.dark', color: 'primary.dark' } }}>
+                            <IconButton aria-label="Viber" {...contactButtonProps} href={'https://www.viber.com/ru/'}>
                                 <ViberIcon fontSize='small' />
                             </IconButton>
-                            <IconButton aria-label="Whatsapp" sx={{ border: '1px solid transparent', '&:hover': { borderColor: 'primary.dark', color: 'primary.dark' } }}>
+                            <IconButton aria-label="Whatsapp" {...contactButtonProps} href={'https://web.whatsapp.com/'}>
                                 <WhatsappIcon fontSize='small' />
                             </IconButton>
-                            <IconButton aria-label="Telegram" sx={{ border: '1px solid transparent', '&:hover': { borderColor: 'primary.dark', color: 'primary.dark' } }}>
+                            <IconButton aria-label="Telegram" {...contactButtonProps} href={'https://web.telegram.org/k/'}>
                                 <TelegramIcon fontSize='small' />
                             </IconButton>
                         </Stack>
@@ -112,28 +124,28 @@ const Footer: React.FC<{ Subscribe: Subscribe }> = ({ Subscribe }) => {
                             flexBasis: { xs: '100%', sm: '0' },
                         }}
                     >
-                            <ResponsiveAccordion title={'Категории'}>
-                                <Stack component={MenuList} gap={1} sx={{ p: 0 }}>
-                                    {
-                                        topLevelCategories.map(category =>
-                                            <ListItem key={category._id as unknown as string} sx={{ p: 0, }}>
-                                                <Link href={category.breadcrumps![category.breadcrumps!.length - 1].link}>{category.__text}</Link>
-                                            </ListItem>
-                                        )
-                                    }
-                                </Stack>
-                            </ResponsiveAccordion>
-                            <ResponsiveAccordion title={'Сервис'}>
-                                <Stack component={MenuList} gap={1} sx={{ p: 0 }}>
-                                    {
-                                        servicePages.map((page, i) =>
-                                            <ListItem key={i} sx={{ p: 0, }}>
-                                                <Link href={page.link}>{page.text}</Link>
-                                            </ListItem>
-                                        )
-                                    }
-                                </Stack>
-                            </ResponsiveAccordion>
+                        <ResponsiveAccordion title={'Категории'}>
+                            <Stack component={MenuList} gap={1} sx={{ p: 0 }}>
+                                {
+                                    topLevelCategories.map(category =>
+                                        <ListItem key={category._id as unknown as string} sx={{ p: 0, }}>
+                                            <Link href={category.breadcrumps![category.breadcrumps!.length - 1].link}>{category.__text}</Link>
+                                        </ListItem>
+                                    )
+                                }
+                            </Stack>
+                        </ResponsiveAccordion>
+                        <ResponsiveAccordion title={'Сервис'}>
+                            <Stack component={MenuList} gap={1} sx={{ p: 0 }}>
+                                {
+                                    servicePages.map((page, i) =>
+                                        <ListItem key={i} sx={{ p: 0, }}>
+                                            <Link href={page.link}>{page.text}</Link>
+                                        </ListItem>
+                                    )
+                                }
+                            </Stack>
+                        </ResponsiveAccordion>
                     </Stack>
                     <Stack gap={1} order={3} sx={{ flex: 1, width: '100%', minWidth: '285px' }}>
                         <Typography variant="body1" component={'h6'} textTransform={'uppercase'} sx={{ color: 'text.disabled', fontWeight: 500 }}>Подписка</Typography>
@@ -188,10 +200,10 @@ const Footer: React.FC<{ Subscribe: Subscribe }> = ({ Subscribe }) => {
             </Container>
             <Divider />
             <Container maxWidth="xl">
-                <Stack direction={'row'} gap={2} sx={{pt: 27/8, pb: 27/8, alignItems: 'center', justifyContent: 'space-between'}}>
-                    <Typography variant="body2" sx={{ color: 'text.disabled' }}>&copy; 2022</Typography>
+                <Stack direction={'row'} gap={2} sx={{ pt: 27 / 8, pb: 27 / 8, alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" sx={{ color: 'text.disabled' }}>&copy; 2022-{new Date().getFullYear()}</Typography>
                     <Stack direction={'row'} gap={1}>
-                        <VisaIcon sx={{ height: { xs: 15, sm: 27 }, width: 'auto', filter: 'grayscale(100%)', '&:hover': { filter: 'none' }, transition: '.2s' }}/>
+                        <VisaIcon sx={{ height: { xs: 15, sm: 27 }, width: 'auto', filter: 'grayscale(100%)', '&:hover': { filter: 'none' }, transition: '.2s' }} />
                         <MastercardIcon sx={{ height: { xs: 15, sm: 27 }, width: 'auto', filter: 'grayscale(100%)', '&:hover': { filter: 'none' }, transition: '.2s' }} />
                         <MaestroIcon sx={{ height: { xs: 15, sm: 27 }, width: 'auto', filter: 'grayscale(100%)', '&:hover': { filter: 'none' }, transition: '.2s' }} />
                         <MirIcon sx={{ height: { xs: 15, sm: 27 }, width: 'auto', filter: 'grayscale(100%)', '&:hover': { filter: 'none' }, transition: '.2s' }} />

@@ -69,9 +69,10 @@ const useSimilar = (product?: ProductInState) => {
             return;
         };
         if (productsFromServer.length != params.length) {
-            const missingQuery = params.find(param => productsFromServer.findIndex(p => compareObjects(p.params, param)) == -1);
-            if (missingQuery) {
-                dispatch(fetchCustomProducts({ params: missingQuery, limit: 50 }));
+            const missingQueries = params.filter(param => productsFromServer.findIndex(p => compareObjects(p.params, param)) == -1);
+            const bulkQuery = missingQueries.map(q => ({ params: q, limit: 50 }));
+            if (missingQueries) {
+                dispatch(fetchCustomProductsBulk(bulkQuery));
             };
         };
     }, [product?._id]);

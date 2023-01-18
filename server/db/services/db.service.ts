@@ -43,8 +43,4 @@ export async function connectToDatabase() {
         orders,
         subscribers
     };
-
-    console.log(
-        `Successfully connected to database: ${db.databaseName} and collection: ${categories.collectionName}!`,
-    );
 }

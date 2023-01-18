@@ -45,9 +45,9 @@ const Product_container = () => {
 
     if (recommended[0] !== null) {
         recommended = (recommended as ProductInState[]).filter(p =>
-            similar.findIndex(s => s ? s._id == p._id : -1) == -1
+            similar.findIndex(s => s?._id == p._id) == -1
             &&
-            viewedProducts.findIndex(s => s ? s._id == p._id : -1) == -1
+            viewedProducts.findIndex(s => s?._id == p._id) == -1
         );
     };
 
