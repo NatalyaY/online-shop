@@ -49,12 +49,12 @@ export default createBrowserRouter(
                         '/my/orders',
                     ].map((path, i) => <Route path={path} key={i} element={<User_container />} />)
                 }
-                <Route path='/delivery' element={< DeliveryAndPayment />} />
-                <Route path='/contacts' element={< Contacts />} />
+                <Route path='/delivery' element={<DeliveryAndPayment />} />
+                <Route path='/contacts' element={<Contacts />} />
 
-                <Route path='*' element={< NotFound />} />
+                <Route path='*' element={<NotFound />} />
             </Route>
-            <Route path='/about' element={< Brand />} />
+            <Route path='/about' element={<Brand />} />
         </>
     )
 );

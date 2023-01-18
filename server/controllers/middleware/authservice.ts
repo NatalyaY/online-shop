@@ -2,8 +2,9 @@ import * as dotenv from "dotenv";
 import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import createError from 'http-errors';
-import { Collection, ObjectId, WithId } from "mongodb";
+import { ObjectId } from "mongodb";
 import express from 'express';
+
 import { clearAuthCookie, RequestCustom, setAuthCookie } from '../../helpers';
 import { collections } from '../../db/services/db.service';
 import User from "../../db/models/user";
@@ -24,47 +25,44 @@ function generateJWT(id: ObjectId) {
 
 const mergeFavoritsAndCart = async ({ unauthorized, autorized }: { unauthorized: User, autorized: User }) => {
     const favorites = {
-        un: await collections.favorites.findOne({ _id: unauthorized.favorites }),
-        aut: await collections.favorites.findOne({ _id: autorized.favorites }),
+        unauthorized: await collections.favorites.findOne({ _id: unauthorized.favorites }),
+        autorized: await collections.favorites.findOne({ _id: autorized.favorites }),
         merged: undefined,
         type: 'favorites' as 'favorites'
     };
     const carts = {
-        un: await collections.carts.findOne({ _id: unauthorized.cart }),
-        aut: await collections.carts.findOne({ _id: autorized.cart }),
+        unauthorized: await collections.carts.findOne({ _id: unauthorized.cart }),
+        autorized: await collections.carts.findOne({ _id: autorized.cart }),
         merged: undefined,
         type: 'carts' as 'carts'
     };
 
-    favorites.merged = unify(favorites.un?.items || [], favorites.aut?.items || []) as any;
-    const filteredUnCart = carts.un?.items.filter(item => {
-        const index = carts.aut?.items.findIndex(i => i.id.toString() == item.id.toString());
-        if (index == -1) {
-            return true
-        }
-    }) || []
-    carts.merged = [...carts.aut?.items || []].concat(filteredUnCart) as any;
+    favorites.merged = unify(favorites.unauthorized?.items || [], favorites.autorized?.items || []) as any;
+    const filteredUnCart = carts.unauthorized?.items.filter(item =>
+        carts.autorized?.items.findIndex(i => i.id.toString() == item.id.toString()) == -1
+    ) || []
+    carts.merged = [...carts.autorized?.items || []].concat(filteredUnCart) as any;
 
-    if (favorites.un?.items) {
-        if (favorites.aut?.items) {
+    if (favorites.unauthorized?.items) {
+        if (favorites.autorized?.items) {
             await collections.favorites.updateOne({ _id: autorized.favorites }, { $set: { items: favorites.merged } });
             await collections.favorites.deleteOne({ _id: unauthorized.favorites });
         } else {
             await collections.favorites.insertOne({
                 userId: autorized._id!,
-                items: favorites.un.items
+                items: favorites.unauthorized.items
             });
         }
     };
 
-    if (carts.un?.items) {
-        if (carts.aut?.items) {
+    if (carts.unauthorized?.items) {
+        if (carts.autorized?.items) {
             await collections.carts.updateOne({ _id: autorized.cart }, { $set: { items: carts.merged } });
             await collections.carts.deleteOne({ _id: unauthorized.cart });
         } else {
             await collections.carts.insertOne({
                 userId: autorized._id!,
-                items: carts.un.items
+                items: carts.unauthorized.items
             });
         }
     };
@@ -135,6 +133,7 @@ export const attachUser = async (req: express.Request, res: express.Response, ne
     const currentUser = await collections.users.findOne({ _id: new ObjectId(decodedToken.id) });
     if (!currentUser) {
         clearAuthCookie(res);
+        // Redirect to get page refresh and run isAuth() to get new user
         res.redirect('back');
     } else {
         (req as RequestCustom).currentUser = currentUser;

@@ -153,8 +153,8 @@ const ProductInCart: React.FC<IProductInCartProps> = ({ productWithQty, setProdu
             {product &&
                 <>
                     <Stack direction={'row'} gap={2}>
-                        <Link href={productLink} flex={'0'} className='woUnderline'>
-                            <img src={`/img/products/${product._id}/100/${0}.webp`} style={{ objectFit: 'contain' }} />
+                        <Link href={productLink} flex={'0 0 100px'} className='woUnderline'>
+                            <img src={`/img/products/${product._id}/100/${0}.webp`} style={{ objectFit: 'contain', maxWidth: '100%' }} />
                         </Link>
                         <Stack justifyContent={'space-between'}>
                             <Link href={productLink} className='woUnderline' display={'flex'} sx={{ flexDirection: 'column' }}>

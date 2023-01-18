@@ -17,7 +17,7 @@ const Brand: React.FC<{}> = () => {
     const pages = isSmallHeight ? 7.5 : 6.8;
 
     const parallax = React.useRef<IParallax>(null!);
-    const { scroll, scrollHeight, moveX } = useScroll(parallax);
+    const { scroll, scrollHeight, moveX, unsubscribe } = useScroll(parallax);
 
     const [opacityProp, opacityPropApi] = useSpring(() => ({
         opacity: 0,
@@ -53,6 +53,10 @@ const Brand: React.FC<{}> = () => {
         moveXReversedApi.start({ x: -x * 2 });
         moveXSlowedApi.start({ x: x * 0.5 });
     }, [moveX]);
+
+    React.useEffect(() => {
+        return unsubscribe;
+    }, [unsubscribe]);
 
 
     let opacity = 1 - (scroll / scrollHeight || 0);
@@ -123,7 +127,7 @@ const useScroll = (parallax: React.MutableRefObject<IParallax>) => {
     const [scroll, setScroll] = React.useState(0);
     const [scrollHeight, setScrollHeight] = React.useState(0);
     const [moveX, setMoveX] = React.useState(0);
-
+    const [unsubscribe, setUnsubscribe] = React.useState<() => void>();
 
     React.useEffect(() => {
         if (!parallax.current) return;
@@ -134,14 +138,19 @@ const useScroll = (parallax: React.MutableRefObject<IParallax>) => {
         parallax.current.container.current.addEventListener('scroll', handleScroll);
         parallax.current.container.current.addEventListener('mousemove', handleMouseMove);
 
-        return () => {
+        const unsubscribe = () => {
+            if (!parallax.current) return;
             parallax.current.container.current.removeEventListener('scroll', handleScroll);
             parallax.current.container.current.removeEventListener('mousemove', handleMouseMove);
         };
 
+        setUnsubscribe(unsubscribe);
+
+        return unsubscribe;
+
     }, [parallax.current?.container.current]);
 
-    return { scroll, scrollHeight, moveX }
+    return { scroll, scrollHeight, moveX, unsubscribe }
 };
 
 const slowConfig = (key: string) => {

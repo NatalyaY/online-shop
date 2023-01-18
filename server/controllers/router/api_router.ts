@@ -12,7 +12,6 @@ import addressRouter from './api/address';
 import nameRouter from './api/user_name';
 
 
-
 const router = express.Router();
 
 router.use(bodyParser.urlencoded({ extended: true }));
@@ -26,7 +25,6 @@ router.use('/orders', ordersRouter);
 router.use('/subscribe', subscribersRouter);
 router.use('/name', nameRouter);
 router.use('/address', addressRouter);
-
 
 
 router.use((error: Error | createError.HttpError, req: express.Request, res: express.Response, next: express.NextFunction) => {

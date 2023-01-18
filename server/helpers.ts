@@ -51,7 +51,7 @@ export type params = {
 
 type aggregationPipeline = { [k: string]: any }[];
 export interface RequestCustom extends express.Request {
-    token: { id: ObjectId };
+    token: { id: string };
     currentUser: User,
     queryBD: { [k in keyof query]: query[k] },
     searchQueries: { results: aggregationPipeline, resultsQty: aggregationPipeline, autocompleteHints: aggregationPipeline },

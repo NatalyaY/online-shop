@@ -24,7 +24,7 @@ import SearchBox from './components/SearchBox';
 import AuthForm from './components/AuthForm';
 import UserMenu from './components/UserMenu';
 import NavigationMenu from './components/NavigationMenu';
-import { type user, type favorits, type cart, type Login, type SignUp, type brands, type GetAutocompleteProducts, type LogOut } from '../../containers/Header/Header_container';
+import { user, favorits, cart, Login, SignUp, brands, GetAutocompleteProducts, LogOut } from '../../containers/Header/Header_container';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 
 interface Props {

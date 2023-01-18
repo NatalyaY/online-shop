@@ -28,6 +28,7 @@ const FiltersDrawer: React.FC<FiltersDrawerProps> = ({ variant, setOpen, open, .
     const styles = {
         width: variant == 'permanent' ? '250px' : '400px',
         maxWidth: '100%',
+        zIndex: '1600',
         '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             position: 'relative',

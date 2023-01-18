@@ -99,12 +99,11 @@ const useFilter = ({ fromServer, fromFrontend }: Props) => {
 
 const setSearchParams = ({ filters, brandName, searchParamsWOCategory, setSearch }: SetSearchParamsProps) => {
     const { category, s, ...filtersWOCategory } = filters;
+    const { s: search, ...searchParams } = searchParamsWOCategory;
 
     if (filtersWOCategory.brand == brandName) {
         delete filtersWOCategory.brand;
     };
-
-    const { s: search, ...searchParams } = searchParamsWOCategory;
 
     if (searchParams.brand == brandName) {
         delete searchParams.brand;
@@ -127,13 +126,14 @@ const setSearchParams = ({ filters, brandName, searchParamsWOCategory, setSearch
 };
 
 const Catalog_container = () => {
+
     const dispatch = useAppDispatch();
     const pathName = useLocation().pathname;
 
     const { categoryID, brandName, searchParams, setSearch } = useParamsFromUrl();
 
     const productsWithParamsFromServer = useProductsQueryParam(searchParams);
-    const productsWithParamsFromState = useAppSelector((state) => selectProducts(state, searchParams));
+    const productsWithParamsFromState = useAppSelector((state) => selectProducts(state, searchParams, true));
 
     const filter = useFilter({ fromServer: productsWithParamsFromServer, fromFrontend: productsWithParamsFromState });
 
@@ -164,13 +164,21 @@ const Catalog_container = () => {
     }, [categoryID, brandName, searchParams]);
 
     React.useEffect(() => {
-        if (!compareObjects(filters, searchParams) && Object.keys(filters).length || (filters.s !== searchParams.s)) {
+        dispatch(filterActions.setFilters(searchParams));
+        return () => {
             dispatch(filterActions.clearFilters());
         };
-        dispatch(filterActions.setFilters(searchParams));
     }, [categoryID, brandName, searchParams.s]);
 
     React.useEffect(() => {
+        if (
+            brandName && brandName !== filters.brand ||
+            categoryID && categoryID !== filters.category ||
+            searchParams.s !== filters.s ||
+            compareObjects(filters, searchParams)
+        ) {
+            return;
+        };
         setSearchParams({ filters, brandName, searchParamsWOCategory, setSearch });
     }, [filters, searchParamsWOCategory]);
 

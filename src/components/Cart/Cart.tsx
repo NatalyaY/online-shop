@@ -29,6 +29,8 @@ const Cart: React.FC<ICartProps> = ({ productsWithQty, viewedProducts, cartStatu
 
     const [stage, setStage] = React.useState<stage>(1);
 
+    React.useEffect(() => setStage(1), [user.status])
+
     return (
         <Container maxWidth="xl" sx={{ pt: 40 / 8, pb: 80 / 8, display: 'flex', gap: 4, flexDirection: 'column' }} component={'article'}>
             {

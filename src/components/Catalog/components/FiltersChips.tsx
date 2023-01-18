@@ -61,7 +61,7 @@ const FiltersChips: React.FC<Props> = ({ price, selectedBrands, inStock, clearFi
             }
             {
                 chipLength > 1 &&
-                <Chip color='primary' variant='outlined' onDelete={() => { clearFilter('price'); clearFilter('inStock'); clearFilter('brand') }} size='medium' label={'Очистить все'} />
+                    <Chip color='primary' variant='outlined' onDelete={() => { clearFilter('price'); clearFilter('inStock'); clearBrandAndRedirect() }} size='medium' label={'Очистить все'} />
             }
         </Stack>
         || null
