@@ -19,3 +19,31 @@ body {
 main {
     flex: 1
 }
+
+.shake {
+    animation: shake 8s infinite;
+}
+
+@keyframes shake {
+
+    10%,
+    50% {
+        transform: translate(-20px, 0) rotate(-1deg) skew(1deg, 0deg);
+    }
+
+    20%,
+    80% {
+        transform: translate(10px, 0) rotate(1deg) skew(-1deg, 0deg);
+    }
+
+    30%,
+    70%,
+    90% {
+        transform: translate(-4px, 0) rotate(-0.2deg);
+    }
+
+    40%,
+    60% {
+        transform: translate(10px, 0) rotate(0.2deg);
+    }
+}

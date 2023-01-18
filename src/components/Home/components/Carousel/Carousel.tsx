@@ -20,9 +20,6 @@ const Carousel = () => {
     const time = 300;
     const delay = time + 3000;
 
-    const img = new Image();
-    img.src = '/img/banners/aroma/img2.png';
-
     const bannersContent: Banner[] = [
         [{
             images: [{

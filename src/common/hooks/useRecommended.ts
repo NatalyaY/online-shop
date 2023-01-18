@@ -16,8 +16,6 @@ const shuffle = (array: any[]) => {
 const useRecommended = (product?: ProductInState) => {
     const dispatch = useAppDispatch();
 
-    const [totalResults, setTotalResults] = React.useState<ProductInState[] | null>(null);
-
     const categoryID: string = product?.breadcrumps[1].UUID || '';
 
     const popular = { inStock: '1' as '1', category: categoryID };
@@ -34,22 +32,21 @@ const useRecommended = (product?: ProductInState) => {
         })
     });
 
+    const getUnifiedProducts = () => {
+        const res = unify(...products.map(list => list.slice(0, 51)));
+        shuffle(res);
+        return res;
+    };
+
     const isFetched = (products.filter(p => p.length !== 0).length == queries.length);
 
-    const recommended = isFetched && totalResults ? totalResults : new Array<null>(20).fill(null);
+    const recommended = isFetched ? getUnifiedProducts() : new Array<null>(20).fill(null);
 
     React.useEffect(() => {
         if (!isFetched) {
             dispatch(fetchCustomProductsBulk(query));
         };
     }, [product?._id]);
-
-    React.useEffect(() => {
-        if (!isFetched) return;
-        const res = unify(...products.map(list => list.slice(0, 51)));
-        shuffle(res);
-        setTotalResults(res);
-    }, [isFetched]);
 
     return recommended;
 };
