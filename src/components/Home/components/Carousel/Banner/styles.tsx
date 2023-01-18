@@ -61,7 +61,7 @@ export const cardStyles = (item: BannerItem, bottomPadding: number) => {
     const commonStyles = {
         backgroundColor: item.backgroundColor || 'secondary.main',
         '&:hover img': { transform: 'scale(1.05)' },
-        '&:hover .content .MuiBox-root': { ...(isMultipleItemsBannerWithImage(item) ? { pb: 10/8 } : {}) },
+        '&:hover .content .MuiBox-root': { ...(isMultipleItemsBannerWithImage(item) ? { pb: 10 / 8 } : {}) },
         touchAction: 'none'
     };
     const singleCardStyles = {
@@ -96,7 +96,7 @@ export const cardActionStyles = (item: BannerItem, bottomPadding: number) => {
                     bottom: 0,
                     opacity: 1,
                     display: 'block',
-                    height: `${bottomPadding}px`,
+                    height: `${bottomPadding + 1}px`,
                     width: '100%',
                     backgroundColor: isBannerWithMediaImage(item) ? (item.text.backgroundColor || 'text.primary') : 'transparent',
                 }
@@ -128,7 +128,7 @@ export const absPosionedContentStyles = (item: BannerItem, bottomPadding: number
         ...getPositionStyles(item.text.position, false, bottomPadding),
         textAlign: item.text.position == 'center' || item.text.position == 'right' ? 'center' : 'left',
         width: (item.text.position == 'top' || item.text.position == 'bottom' || item.text.position == 'center') ?
-            '100%' : 'fit-content',
+            'calc(100% + 1px)' : 'fit-content',
         maxWidth: (item.text.position == 'top' || item.text.position == 'bottom' || item.text.position == 'center') ?
             'unset' : { xs: '100%', md: '55%' },
         p: 0
@@ -141,6 +141,7 @@ export const imageContainerStyles = (imagePosition: imagePositionWOMedia, margin
         ...getPositionStyles(imagePosition, true, bottomPadding),
         maxWidth: (imagePosition == 'top' || imagePosition == 'bottom') ?
             '100%' : '50%',
+        minWidth: '350px',
         height: '100%',
         alignItems: 'center',
         justifyContent: 'center',

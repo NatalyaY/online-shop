@@ -23,7 +23,7 @@ const cache = createEmotionCache();
 
 const Main = () => {
     return (
-        // <React.StrictMode>
+        <React.StrictMode>
             <CacheProvider value={cache}>
                 <ThemeProvider theme={theme}>
                     <CssBaseline />

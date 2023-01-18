@@ -151,7 +151,10 @@ const productsSlice = createSlice({
                 const totalProducts = unify(state.products, action.payload.products);
                 state.products = totalProducts;
 
-                state.qty = action.payload.qty;
+                if (state.qty) {
+                    state.qty = action.payload.qty;
+                };
+
                 state.queryParams = state.queryParams ? [...state.queryParams, action.payload] : [action.payload];
             })
             .addCase(fetchProductsByIDs.fulfilled, (state, action) => {

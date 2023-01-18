@@ -168,7 +168,7 @@ export const MultipleCarousel: React.FC<MultipleCarouselProps> = ({ children, sx
         scrollToActiveChild();
     }, [index]);
 
-    function onDragStart() { return false; };
+    function onDragStart(e: React.DragEvent) { e.preventDefault(); return false;  };
     function onPointerDown() {
         pageX = 0;
         document.addEventListener('pointermove', galleryScroll);

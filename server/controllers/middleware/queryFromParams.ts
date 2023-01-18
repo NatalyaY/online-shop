@@ -2,7 +2,7 @@ import express from 'express';
 import { params, query, RequestCustom } from '../../helpers';
 import { ObjectId } from 'mongodb';
 
-const searchParams = {
+const paramsMap = {
     category: 'categoryId' as 'categoryId',
     brand: 'brand' as 'brand',
     price: 'price' as 'price',
@@ -16,7 +16,9 @@ export const getQuery = (params: params, req: express.Request, next: express.Nex
     (req as RequestCustom).reqParams = params;
 
     if (params._id) {
-        const query = typeof params._id == 'string' ? { _id: new ObjectId(params._id) } : { _id: { $in: params._id.map(id => new ObjectId(id)) } };
+        const query = typeof params._id == 'string' ?
+            { _id: new ObjectId(params._id) } :
+            { _id: { $in: params._id.map(id => new ObjectId(id)) } };
         (req as RequestCustom).queryBD = query;
         return next();
     };
@@ -179,19 +181,24 @@ export const getQuery = (params: params, req: express.Request, next: express.Nex
     };
 
     const { price, inStock, brand, ...rest } = params;
-    let query: query = Object.fromEntries(Object.entries(rest).map(([k, v]) => [searchParams[k as keyof typeof searchParams], k == 'p' || k == 'onpage' ? +v : v]).filter(e => e[0] !== undefined));
+    // prepare only known params
+    const query: query = Object.fromEntries(
+        Object.entries(rest)
+            .map(([k, v]) => [paramsMap[k as keyof typeof paramsMap], k == 'p' || k == 'onpage' ? +v : v])
+            .filter(e => e[0] !== undefined)
+    );
 
-    if (price && ('' + price).split(';').length == 2) {
+    if (price && price.split(';').length == 2) {
         const [minPrice, maxPrice] = price.split(';');
         query['salePrice'] = { $lte: +maxPrice, $gte: +minPrice };
     };
 
     if (inStock) {
-        query[searchParams['inStock']] = { $gt: 0 };
+        query[paramsMap['inStock']] = { $gt: 0 };
     };
 
     if (brand) {
-        query[searchParams['brand']] = { $in: brand.split(';') };
+        query[paramsMap['brand']] = { $in: brand.split(';') };
     };
 
     (req as RequestCustom).queryBD = query;
@@ -202,30 +209,22 @@ export const getQuery = (params: params, req: express.Request, next: express.Nex
 const parseParams = (req: express.Request) => {
     const PROD_REG = /prod-(?<product>([^\/]+?))-(.*)\/?/i;
     const CAT_REG = /cat-(?<category>([^\/]+?))-(.*)\/?/i;
-    const BRAND_REG = /(\/brands\/(?<brand>([^\/]+?)))([\/](.*))?$/i;
+    const BRAND_REG = /(\/brands\/(?<brand>([^\/]+?)))(\/(.*))?$/i;
 
     if (req.url.match(PROD_REG)) {
         const prod_id = req.url.match(PROD_REG)!.groups!.product;
         return { _id: prod_id };
     };
 
-    const s = req.url.split('?')[1] || req.headers.referer?.split('?')[1];
+    const [, s] = req.url.split('?') || req.headers.referer?.split('?');
     const path = req.headers.referer || req.url;
 
-    const search: params = s ? Object.fromEntries([...new URLSearchParams(s).entries()].map(e => {
-        const [k, v] = e;
-        const value = k == 'onpage' || k == 'p' ? +v : v;
-        return [k, value];
-    })) : {};
+    const searchParams: params = s ? Object.fromEntries(new URLSearchParams(s).entries()) : {};
 
     const category = path.match(CAT_REG)?.groups?.category || req.query.category as string;
     const brand = path.match(BRAND_REG)?.groups?.brand || req.query.brand as string;
 
-    if (category) {
-        search.category = category;
-    };
-    if (brand) search.brand = brand;
-    return search;
+    return { ...searchParams, ...(category && { category }), ...(brand && { brand }) };
 };
 
 export default function getQueryFromSearchParams(req: express.Request, res: express.Response, next: express.NextFunction) {

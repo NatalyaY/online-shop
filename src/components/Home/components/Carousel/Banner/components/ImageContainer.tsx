@@ -18,12 +18,14 @@ const ImageContainer: React.FC<{ image: images[number], alt: string, position: i
         <Stack
             sx={imageContainerStyles(position, image.margin, bottomPadding)}
         >
-            <Box sx={{ maxHeight: '100%', position: 'relative' }}>
+            <Box sx={{ height: '100%', maxWidth: '100%', position: 'relative', display: 'flex'}}>
+
                 <img src={image.src} alt={alt} style={imageStyles} />
                 {
-                    image.label && <Label label={image.label} position={labelPosition}/>
+                    image.label && <Label label={image.label} position={labelPosition} />
                 }
                 <Box sx={imageCircleStyles} />
+
             </Box>
         </Stack>
     )

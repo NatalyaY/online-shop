@@ -1,7 +1,6 @@
 import express from 'express';
 
 import { collections } from '../../db/services/db.service';
-const ObjectId = require('mongodb').ObjectId;
 import { translitBrand } from './../../../src/common/helpers/translitBrand';
 
 import {
@@ -159,25 +158,26 @@ const fetchProducts = async ({ limit, search, sorting, query, sort, skip, catego
 
 const fetchFavoritsCartOrOrders = async (col: "favorites" | "cart" | "orders", user: RequestCustom['currentUser']) => {
     const result: fetchedData = {};
-    let id = user[col];
-    if (!id) return result;
+    if (!user[col]) return result;
 
     if (col == 'favorites') {
-        const favorits = await collections.favorites.findOne<FavoriteMapped>({ _id: new ObjectId(id) });
+        const id = user[col];
+        const favorits = await collections.favorites.findOne<FavoriteMapped>({ _id: id });
         if (favorits) {
             result.favorites = favorits;
         };
     };
 
     if (col == 'cart') {
-        const cart = await collections.carts.findOne<CartMapped>({ _id: new ObjectId(id) });
+        const id = user[col];
+        const cart = await collections.carts.findOne<CartMapped>({ _id: id });
         if (cart) {
             result.cart = cart;
         };
     };
 
     if (col == 'orders') {
-        const ordersId = id as NonNullable<typeof user['orders']>
+        const ordersId = user[col];
         const orders = await collections.orders.find<OrderMapped>({ _id: { $in: ordersId } }).toArray();
         if (orders) {
             result.orders = orders;
@@ -201,7 +201,7 @@ const getProductOptions = async (req: RequestCustom, query: RequestCustom['query
 
     if (isSearch) {
         const brandsQuery = [
-            ...(req as RequestCustom).searchQueries.results,
+            ...req.searchQueries.results,
             {
                 $group:
                 {
@@ -211,7 +211,7 @@ const getProductOptions = async (req: RequestCustom, query: RequestCustom['query
             }
         ];
         const categoriesQuery = [
-            ...(req as RequestCustom).searchQueries.results, { $match: query },
+            ...req.searchQueries.results, { $match: query },
             {
                 $group:
                 {
@@ -221,7 +221,7 @@ const getProductOptions = async (req: RequestCustom, query: RequestCustom['query
             },
         ];
         const pricesQuery = [
-            ...(req as RequestCustom).searchQueries.results, { $match: queryWOPrice },
+            ...req.searchQueries.results, { $match: queryWOPrice },
             {
                 $group:
                 {
@@ -231,7 +231,7 @@ const getProductOptions = async (req: RequestCustom, query: RequestCustom['query
             }
         ];
         const availableBrandsQuery = [
-            ...(req as RequestCustom).searchQueries.results, { $match: queryWOBrand },
+            ...req.searchQueries.results, { $match: queryWOBrand },
             {
                 $group:
                 {
@@ -241,21 +241,26 @@ const getProductOptions = async (req: RequestCustom, query: RequestCustom['query
             }
         ];
 
-        const brandsResult = await collections.products.aggregate<{ productsBrands: string[] }>(brandsQuery).toArray();
-        const availableBrandsResults = await collections.products.aggregate<{ availableBrands: string[] }>(availableBrandsQuery).toArray();
-        const pricesResults = await collections.products.aggregate<{ saleprices: number[] }>(pricesQuery).toArray();
-        const categoriesResults = await collections.products.aggregate<{ productsCategories: string[] }>(categoriesQuery).toArray();
+        const [brandsResult] = await collections.products.aggregate<{ productsBrands: string[] }>(brandsQuery).toArray();
+        const [availableBrandsResults] = await collections.products.aggregate<{ availableBrands: string[] }>(availableBrandsQuery).toArray();
+        const [pricesResults] = await collections.products.aggregate<{ saleprices: number[] }>(pricesQuery).toArray();
+        const [categoriesResults] = await collections.products.aggregate<{ productsCategories: string[] }>(categoriesQuery).toArray();
 
-        result.availableBrands = availableBrandsResults[0]?.availableBrands.sort() || [];
-        result.productsBrands = brandsResult[0]?.productsBrands.sort() || [];
-        result.productsCategories = categoriesResults[0]?.productsCategories.sort() || [];
-        prices = pricesResults[0]?.saleprices || []
+        availableBrandsResults?.availableBrands.sort();
+        brandsResult?.productsBrands.sort();
+        categoriesResults?.productsCategories.sort();
+
+        result.availableBrands = availableBrandsResults?.availableBrands || [];
+        result.productsBrands = brandsResult?.productsBrands || [];
+        result.productsCategories = categoriesResults?.productsCategories || [];
+        prices = pricesResults?.saleprices || []
     } else {
         result.availableBrands = await collections.products.distinct('brand', queryWOBrand);
         result.productsBrands = await collections.products.distinct('brand', queryByCategory);
         result.productsCategories = await collections.products.distinct('categoryId', queryWOFilters);
         prices = await collections.products.distinct('salePrice', queryWOFilters);
     };
+
     result.minPrice = Math.min(...prices);
     result.maxPrice = Math.max(...prices);
 

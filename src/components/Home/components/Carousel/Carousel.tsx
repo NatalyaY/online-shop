@@ -173,15 +173,11 @@ const Carousel = () => {
                         position: 'relative',
                         overflow: 'hidden',
                         borderRadius: 2,
-                        '&:before': {
-                            content: '""',
-                            display: 'block',
-                            pt: {
-                                xs: `calc(130% + ${testimonialsOverlap}px)`,
-                                sm: `calc((9/16)*100% + ${testimonialsOverlap}px)`,
-                                md: `calc((1/2.7)*100% + ${testimonialsOverlap}px)`
-                            }
-                        }
+                        height: {
+                            xs: `calc(130vw + ${testimonialsOverlap}px)`,
+                            sm: `calc((9/16)*100vw + ${testimonialsOverlap}px)`,
+                            md: `calc((1/2.7)*min(100vw, 1700px) + ${testimonialsOverlap}px)`
+                        },
                     }}
                     direction='row'
                     ref={containerRef}>

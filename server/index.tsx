@@ -10,7 +10,7 @@ import imageRouter from './controllers/router/image_router';
 
 
 const app = express();
-const staticDir = '../dist';
+const staticDir = './dist';
 
 gethotReload(app);
 
@@ -29,6 +29,6 @@ app.use('/', mainRoter);
 app.set('port', 3000);
 
 
-connectToDatabase().then(async () => {
+connectToDatabase().then(() => {
     app.listen(app.get('port'));
 });
